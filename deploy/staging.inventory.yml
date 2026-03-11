@@ -1,6 +1,0 @@
-webservers:
-  hosts:
-    web0:
-      ansible_host: i-08bbcc89fcb90b8c7
-  vars:
-    secrets_file: 'Ansible Secrets - Staging'

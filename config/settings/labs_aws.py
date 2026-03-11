@@ -7,58 +7,117 @@ For local development (even of labs features), use config.settings.local.
 Session-based OAuth authentication with no user database storage.
 """
 
-from .staging import *  # noqa
+import logging
 
-# Labs environment flags
+from .base import *  # noqa
+from .base import INSTALLED_APPS, MIDDLEWARE, STORAGES, env
+
+# GENERAL
+# ------------------------------------------------------------------------------
+SECRET_KEY = env("DJANGO_SECRET_KEY", default="")
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
+
+DATABASES["default"]["CONN_MAX_AGE"] = env.int("CONN_MAX_AGE", default=60)  # noqa: F405
+
+# SECURITY
+# ------------------------------------------------------------------------------
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=False)
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
+SECURE_HSTS_SECONDS = 60
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool("DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS", default=True)
+SECURE_HSTS_PRELOAD = env.bool("DJANGO_SECURE_HSTS_PRELOAD", default=True)
+SECURE_CONTENT_TYPE_NOSNIFF = env.bool("DJANGO_SECURE_CONTENT_TYPE_NOSNIFF", default=True)
+
+# STORAGES (S3)
+# ------------------------------------------------------------------------------
+INSTALLED_APPS = list(INSTALLED_APPS)
+INSTALLED_APPS += ["storages"]
+AWS_STORAGE_BUCKET_NAME = env("DJANGO_AWS_STORAGE_BUCKET_NAME", default="commcare-connect-media")
+AWS_QUERYSTRING_AUTH = False
+_AWS_EXPIRY = 60 * 60 * 24 * 7
+AWS_S3_OBJECT_PARAMETERS = {
+    "CacheControl": f"max-age={_AWS_EXPIRY}, s-maxage={_AWS_EXPIRY}, must-revalidate",
+}
+AWS_S3_MAX_MEMORY_SIZE = env.int("DJANGO_AWS_S3_MAX_MEMORY_SIZE", default=100_000_000)
+AWS_S3_REGION_NAME = env("AWS_DEFAULT_REGION", default=None)
+AWS_S3_CUSTOM_DOMAIN = env("DJANGO_AWS_S3_CUSTOM_DOMAIN", default=None)
+aws_s3_domain = AWS_S3_CUSTOM_DOMAIN or f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
+MEDIA_URL = f"https://{aws_s3_domain}/media/"
+STORAGES["default"]["BACKEND"] = "commcare_connect.utils.storages.MediaRootS3Boto3Storage"
+
+# EMAIL (SES)
+# ------------------------------------------------------------------------------
+INSTALLED_APPS += ["anymail"]
+ANYMAIL = {}
+
+# SENTRY
+# ------------------------------------------------------------------------------
+SENTRY_DSN = env("SENTRY_DSN", default="")
+APP_RELEASE = env("APP_RELEASE", default=None)
+if SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.celery import CeleryIntegration
+    from sentry_sdk.integrations.django import DjangoIntegration
+    from sentry_sdk.integrations.logging import LoggingIntegration, ignore_logger
+    from sentry_sdk.integrations.redis import RedisIntegration
+
+    ignore_logger("django.security.DisallowedHost")
+    sentry_logging = LoggingIntegration(level=logging.INFO, event_level=logging.ERROR)
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[sentry_logging, DjangoIntegration(), CeleryIntegration(), RedisIntegration()],
+        environment=env("DEPLOY_ENVIRONMENT", default="labs"),
+        release=APP_RELEASE,
+        traces_sample_rate=env.float("SENTRY_TRACES_SAMPLE_RATE", default=0.0),
+    )
+
+# CSRF
+# ------------------------------------------------------------------------------
+CSRF_TRUSTED_ORIGINS = ["https://*.127.0.0.1"] + env.list("CSRF_TRUSTED_ORIGINS", default=[])
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
+
+# LABS ENVIRONMENT
+# ------------------------------------------------------------------------------
 IS_LABS_ENVIRONMENT = True
 DEPLOY_ENVIRONMENT = "labs"
 
 # OAuth configuration
-LABS_OAUTH_SCOPES = ["export"]  # Expandable: ["export", "labs_data_storage"]
-# Disable local registration
+LABS_OAUTH_SCOPES = ["export"]
 ACCOUNT_ALLOW_REGISTRATION = False
-
-# Override login URL to labs OAuth
 LOGIN_URL = "/labs/login/"
 
 # Custom authentication (session-based OAuth for users, Django auth for admin)
 AUTHENTICATION_BACKENDS = [
-    "django.contrib.auth.backends.ModelBackend",  # For admin superuser login
-    "commcare_connect.labs.auth_backend.LabsOAuthBackend",  # For OAuth users
+    "django.contrib.auth.backends.ModelBackend",
+    "commcare_connect.labs.auth_backend.LabsOAuthBackend",
 ]
 
 # Add labs app and custom_analysis
-INSTALLED_APPS = list(INSTALLED_APPS)  # noqa: F405
 INSTALLED_APPS.append("commcare_connect.labs")
 INSTALLED_APPS.append("commcare_connect.custom_analysis.chc_nutrition")
 
 # Replace default AuthenticationMiddleware with labs version
-# Remove production OrganizationMiddleware and add labs-specific middlewares
-MIDDLEWARE = list(MIDDLEWARE)  # noqa: F405
+MIDDLEWARE = list(MIDDLEWARE)
 _auth_idx = MIDDLEWARE.index("django.contrib.auth.middleware.AuthenticationMiddleware")
 MIDDLEWARE[_auth_idx] = "commcare_connect.labs.middleware.LabsAuthenticationMiddleware"
 
-# Silence admin.E408 - we use LabsAuthenticationMiddleware instead of Django's default
-# The custom middleware provides the same user authentication functionality
 SILENCED_SYSTEM_CHECKS = ["admin.E408"]
-MIDDLEWARE.remove("commcare_connect.users.middleware.OrganizationMiddleware")  # Remove production middleware
+MIDDLEWARE.remove("commcare_connect.users.middleware.OrganizationMiddleware")
 MIDDLEWARE.insert(_auth_idx + 1, "commcare_connect.labs.middleware.LabsURLWhitelistMiddleware")
 MIDDLEWARE.insert(_auth_idx + 2, "commcare_connect.labs.context.LabsContextMiddleware")
 
-# CommCare OAuth configuration (for accessing CommCare HQ APIs)
-# These should be set via environment variables
-COMMCARE_HQ_URL = env("COMMCARE_HQ_URL", default="https://www.commcarehq.org")  # noqa: F405
-COMMCARE_OAUTH_CLIENT_ID = env("COMMCARE_OAUTH_CLIENT_ID", default="")  # noqa: F405
-COMMCARE_OAUTH_CLIENT_SECRET = env("COMMCARE_OAUTH_CLIENT_SECRET", default="")  # noqa: F405
-COMMCARE_OAUTH_CLI_CLIENT_ID = env("COMMCARE_OAUTH_CLI_CLIENT_ID", default="")  # noqa: F405
+# CommCare OAuth configuration
+COMMCARE_HQ_URL = env("COMMCARE_HQ_URL", default="https://www.commcarehq.org")
+COMMCARE_OAUTH_CLIENT_ID = env("COMMCARE_OAUTH_CLIENT_ID", default="")
+COMMCARE_OAUTH_CLIENT_SECRET = env("COMMCARE_OAUTH_CLIENT_SECRET", default="")
+COMMCARE_OAUTH_CLI_CLIENT_ID = env("COMMCARE_OAUTH_CLI_CLIENT_ID", default="")
 
-# Open Chat Studio OAuth configuration (for accessing OCS APIs)
-OCS_URL = env("OCS_URL", default="https://www.openchatstudio.com")  # noqa: F405
-OCS_OAUTH_CLIENT_ID = env("OCS_OAUTH_CLIENT_ID", default="")  # noqa: F405
-OCS_OAUTH_CLIENT_SECRET = env("OCS_OAUTH_CLIENT_SECRET", default="")  # noqa: F405
+# Open Chat Studio OAuth configuration
+OCS_URL = env("OCS_URL", default="https://www.openchatstudio.com")
+OCS_OAUTH_CLIENT_ID = env("OCS_OAUTH_CLIENT_ID", default="")
+OCS_OAUTH_CLIENT_SECRET = env("OCS_OAUTH_CLIENT_SECRET", default="")
 
-# Allow large POST bodies for snapshot save (~20-30 MB JSON payloads)
+# Allow large POST bodies for snapshot save
 DATA_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # 50 MB
-
-# Labs apps configuration
-# No longer need hardcoded opportunity_id - API now supports organization_id/program_id
