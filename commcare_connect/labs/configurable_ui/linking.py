@@ -8,7 +8,6 @@ even when visits come from different opportunities or form types.
 from dataclasses import dataclass
 from typing import Any
 
-from commcare_connect.opportunity.models import UserVisit
 
 
 @dataclass
@@ -26,7 +25,7 @@ class ChildLinkingService:
     def __init__(self, config: LinkingConfig):
         self.config = config
 
-    def link_visits(self, visits: list[UserVisit]) -> dict[str, list[UserVisit]]:
+    def link_visits(self, visits: list[Any]) -> dict[str, list[Any]]:
         """
         Group visits by child identifier.
 
@@ -48,7 +47,7 @@ class ChildLinkingService:
 
         return children
 
-    def get_child_id_from_visit(self, visit: UserVisit) -> str | None:
+    def get_child_id_from_visit(self, visit: Any) -> str | None:
         """
         Get child_id for a single visit (for external linking).
 
@@ -60,7 +59,7 @@ class ChildLinkingService:
         """
         return self._extract_identifier(visit)
 
-    def _extract_identifier(self, visit: UserVisit) -> str | None:
+    def _extract_identifier(self, visit: Any) -> str | None:
         """Extract identifier from visit form JSON using configured paths."""
         form_json = visit.form_json
         for path in self.config.identifier_paths:
