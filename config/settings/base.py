@@ -135,7 +135,6 @@ LOCAL_APPS = [
     "commcare_connect.audit",
     "commcare_connect.workflow",
     "commcare_connect.coverage",
-    "commcare_connect.data_export",
     "commcare_connect.labs.admin_boundaries",
     "commcare_connect.multidb",
     "commcare_connect.opportunity",
