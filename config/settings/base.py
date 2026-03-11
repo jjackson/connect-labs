@@ -118,9 +118,6 @@ DJANGO_APPS = [
 THIRD_PARTY_APPS = [
     "crispy_forms",
     "crispy_tailwind",
-    "allauth",
-    "allauth.account",
-    "allauth.socialaccount",
     "django_celery_beat",
     "rest_framework",
     "rest_framework.authtoken",
@@ -137,8 +134,6 @@ LOCAL_APPS = [
     "commcare_connect.tasks",
     "commcare_connect.audit",
     "commcare_connect.workflow",
-    "commcare_connect.commcarehq_provider",
-    "commcare_connect.commcarehq",
     "commcare_connect.coverage",
     "commcare_connect.data_export",
     "commcare_connect.labs.admin_boundaries",
@@ -161,7 +156,6 @@ MIGRATION_MODULES = {"sites": "commcare_connect.contrib.sites.migrations"}
 # ------------------------------------------------------------------------------
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
-    "allauth.account.auth_backends.AuthenticationBackend",
 ]
 AUTH_USER_MODEL = "users.User"
 LOGIN_REDIRECT_URL = "users:redirect"

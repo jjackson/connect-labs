@@ -19,7 +19,6 @@ urlpatterns = [
     path("o/", include("oauth2_provider.urls", namespace="oauth2_provider")),
     # User management
     path("users/", include("commcare_connect.users.urls", namespace="users")),
-    path("accounts/", include("allauth.urls")),
     # Your stuff: custom urls includes go here
     path("register/organization/", organization_create, name="organization_create"),
     path("solicitations/", include("commcare_connect.solicitations.urls", namespace="solicitations")),
