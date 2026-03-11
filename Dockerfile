@@ -9,7 +9,6 @@ RUN apt-get update \
 COPY ./requirements /requirements
 # Build wheels for each requirement file separately to avoid conflicts
 RUN pip wheel --no-cache-dir --wheel-dir /wheels -r /requirements/base.txt
-RUN pip wheel --no-cache-dir --wheel-dir /wheels -r /requirements/production.txt
 RUN pip wheel --no-cache-dir --wheel-dir /wheels -r /requirements/labs.txt
 
 FROM node:18-bullseye AS build-node
@@ -29,9 +28,7 @@ ENV DEBUG=0
 RUN apt-get update \
   # psycopg2, gettext etc dependencies
   # gdal-bin provides GDAL runtime libraries for GeoDjango spatial features
-  # libpango*, libpangocairo*, libharfbuzz* are runtime dependencies for WeasyPrint (PDF generation)
   && apt-get install -y libpq-dev gettext curl gdal-bin \
-     libpango-1.0-0 libpangoft2-1.0-0 libpangocairo-1.0-0 libharfbuzz-subset0 \
   # cleaning up unused files
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && rm -rf /var/lib/apt/lists/*
@@ -44,9 +41,8 @@ ENV DJANGO_SETTINGS_MODULE=config.settings.labs_aws
 COPY --from=build-node /app/commcare_connect/static/bundles /app/commcare_connect/static/bundles
 COPY --from=build-python /wheels /wheels
 COPY ./requirements /requirements
-# Install sequentially: base, then production, then labs (which may upgrade packages)
+# Install sequentially: base, then labs (which may upgrade packages)
 RUN pip install --no-index --find-links=/wheels -r /requirements/base.txt && \
-    pip install --no-index --find-links=/wheels -r /requirements/production.txt && \
     pip install --no-index --find-links=/wheels -r /requirements/labs.txt --force-reinstall \
     && rm -rf /wheels \
     && rm -rf /root/.cache/pip/*
