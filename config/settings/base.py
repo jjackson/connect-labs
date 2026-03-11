@@ -128,10 +128,8 @@ THIRD_PARTY_APPS = [
     "drf_spectacular",
     "oauth2_provider",
     "django_tables2",
-    "waffle",
     "pghistory",
     "pgtrigger",  # added for pghistory
-    "vectortiles",
 ]
 
 LOCAL_APPS = [
@@ -143,19 +141,15 @@ LOCAL_APPS = [
     "commcare_connect.commcarehq",
     "commcare_connect.coverage",
     "commcare_connect.data_export",
-    "commcare_connect.flags",
-    "commcare_connect.form_receiver",
     "commcare_connect.labs.admin_boundaries",
     "commcare_connect.multidb",
     "commcare_connect.opportunity",
     "commcare_connect.organization",
     "commcare_connect.program",
-    "commcare_connect.reports",
     "commcare_connect.solicitations",
     "commcare_connect.solicitations_new",
     "commcare_connect.users",
     "commcare_connect.web",
-    "commcare_connect.microplanning",
 ]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
@@ -205,7 +199,6 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "commcare_connect.utils.middleware.CustomErrorHandlingMiddleware",
     "commcare_connect.utils.middleware.CurrentVersionMiddleware",
-    "waffle.middleware.WaffleMiddleware",
     "commcare_connect.utils.middleware.CustomPGHistoryMiddleware",
 ]
 
