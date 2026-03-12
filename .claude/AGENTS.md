@@ -4,6 +4,8 @@
 
 Labs is a **separate Django deployment** that communicates with production CommCare Connect entirely via OAuth and HTTP APIs. It has no direct database access to production data.
 
+Most production apps have been removed from this codebase. The remaining non-labs apps (`opportunity`, `users`, `organization`, `program`, `commcarehq`) are kept only for their Django models and migrations (needed by foreign key references).
+
 **Key principles:**
 
 - **OAuth session auth** — no Django User model. `LabsUser` is transient (created from session on each request, never saved to DB)
@@ -14,7 +16,7 @@ Labs is a **separate Django deployment** that communicates with production CommC
 **Three middleware layers** (configured in `config/settings/local.py`):
 
 1. `LabsAuthenticationMiddleware` — populates `request.user` as `LabsUser` from session OAuth data
-2. `LabsURLWhitelistMiddleware` — redirects non-labs URLs to `connect.dimagi.com`; whitelisted prefixes: `/ai/`, `/audit/`, `/coverage/`, `/tasks/`, `/solicitations/`, `/labs/`, `/custom_analysis/`
+2. `LabsURLWhitelistMiddleware` — redirects non-labs URLs to `connect.dimagi.com`; whitelisted prefixes: `/ai/`, `/audit/`, `/coverage/`, `/tasks/`, `/solicitations/`, `/solicitations_new/`, `/labs/`, `/custom_analysis/`
 3. `LabsContextMiddleware` — extracts opportunity/program/organization from URL params and session into `request.labs_context`
 
 **Important:** Use `config.settings.local` for local development, NOT `config.settings.labs_aws`. The `labs_aws` settings are only for the AWS deployment at `labs.connect.dimagi.com`. Local settings already have `IS_LABS_ENVIRONMENT = True`.
@@ -38,9 +40,9 @@ View receives request
 
 Each app wraps the client in a `data_access.py` with domain-specific methods. See `commcare_connect/tasks/data_access.py` for the simplest example.
 
-### Pattern B: Django ORM (Legacy — Do Not Use for Labs)
+### Pattern B: Django ORM (Retained for Migrations Only — Do Not Use for Labs)
 
-The `opportunity/`, `organization/`, `program/`, `users/` apps contain Django ORM models from the production CommCare Connect codebase. In the labs environment, these tables are empty. **Never query these models expecting production data.**
+The `opportunity/`, `organization/`, `program/`, `users/`, and `commcarehq/` apps contain Django ORM models retained only for their migrations and foreign key references. In the labs environment, these tables are empty. **Never query these models expecting production data.** The `opportunity/` app in particular has been gutted to models + migrations + factory stubs only (no views, no business logic).
 
 The only local Django models used by labs are cache tables in `commcare_connect/labs/analysis/backends/sql/models.py` (`RawVisitCache`, `ComputedVisitCache`, `ComputedFLWCache`).
 
@@ -204,5 +206,5 @@ Coverage ──────────→ CommCare HQ (separate OAuth, no Conne
 4. **Forgetting the URL whitelist** — new app URL prefixes must be added to `WHITELISTED_PREFIXES` in `commcare_connect/labs/middleware.py`
 5. **Using `user_id` with the production API** — production uses `username` as the primary identifier, not integer IDs
 6. **Not handling API errors** — `LabsRecordAPIClient` raises `LabsAPIError` on HTTP failures; handle timeouts gracefully
-7. **Creating Django migrations for production models** — don't modify `opportunity/`, `organization/`, etc. Labs data lives in production via the API.
+7. **Modifying retained non-labs apps** — don't modify `opportunity/`, `organization/`, `program/`, `users/`, or `commcarehq/`. They exist only for migrations and FK references.
 8. **Hardcoding opportunity IDs** — use `request.labs_context` from middleware instead

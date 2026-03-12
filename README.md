@@ -91,11 +91,10 @@ OPENAI_API_KEY=sk...
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-## Inherited Production Code
+## Retained Non-Labs Apps
 
-This repo contains the full production CommCare Connect Django ORM codebase (`opportunity/`, `organization/`, `program/`, `users/`). That code is inherited and **not relevant for labs development** — the tables are empty in this environment. Do not modify those apps for labs features.
+Most production apps have been removed. The remaining non-labs apps (`opportunity/`, `organization/`, `program/`, `users/`, `commcarehq/`) are kept only for their Django models and migrations (needed by foreign key references). Their tables are empty in this environment — do not modify them for labs features. See [docs/upstream-reference.md](docs/upstream-reference.md) for details on what was removed.
 
 ## Deployment
 
 - **Labs:** Use `/deploy-labs` skill or `gh workflow run "Deploy to AWS Labs"` — see [deploy skill](.claude/skills/deploy-labs/SKILL.md)
-- **Production:** See [deploy/README.md](deploy/README.md) for Kamal/Ansible deployment

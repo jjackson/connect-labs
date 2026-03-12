@@ -75,7 +75,7 @@ The worker's display name (and username underneath if different). Always visible
 
 **How it's calculated:** Uses the `last_active` field from Connect user data — the date of the FLW's most recent form submission or module completion. Displayed as "Xd ago" (e.g., "3d ago" means the FLW was last active 3 days ago).
 
-**Data source:** Connect user export API (`/export/opportunity/{id}/user_data/`), field: `last_active` (DateTimeField on `OpportunityAccess` model, updated by `form_receiver/processor.py` on each form submission).
+**Data source:** Connect user export API (`/export/opportunity/{id}/user_data/`), field: `last_active` (DateTimeField on `OpportunityAccess` model, updated on each form submission).
 
 **Color coding:**
 - Green: ≤ 7 days (active within the past week)

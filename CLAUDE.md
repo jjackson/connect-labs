@@ -2,7 +2,7 @@
 
 This is a **labs/rapid prototyping environment** for CommCare Connect. It operates entirely via API against the production CommCare Connect instance — there is no direct database access to production data.
 
-The repo also contains the full production CommCare Connect Django ORM codebase (opportunity models, user models, etc.). That code is inherited and **not relevant for labs development**. Do not query those models expecting production data — the tables are empty in this environment.
+Most production apps have been removed from this codebase. The remaining non-labs apps (`opportunity`, `users`, `organization`, `program`) are kept only for their Django models and migrations (needed by foreign key references). Their tables are empty in this environment — do not query them expecting production data.
 
 ## Architecture at a Glance
 
@@ -14,6 +14,8 @@ The repo also contains the full production CommCare Connect Django ORM codebase 
 
 ## App Map
 
+### Labs Apps (Active Development)
+
 | App              | Purpose                                                               | Key files                                                                        |
 | ---------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | `labs/`          | Core infrastructure: OAuth, API client, middleware, analysis pipeline | `integrations/connect/api_client.py`, `models.py`, `middleware.py`, `context.py` |
@@ -23,6 +25,16 @@ The repo also contains the full production CommCare Connect Django ORM codebase 
 | `ai/`            | AI agent integration via pydantic-ai, SSE streaming                   | `agents/`, `views.py` (AIStreamView)                                             |
 | `solicitations/` | RFP management (scoped by program, not opportunity)                   | `data_access.py`, `models.py`                                                    |
 | `coverage/`      | Delivery unit mapping from CommCare HQ (separate OAuth)               | `data_access.py`, `data_loader.py`                                               |
+
+### Retained Non-Labs Apps (Models + Migrations Only)
+
+| App              | Purpose                                                               |
+| ---------------- | --------------------------------------------------------------------- |
+| `opportunity/`   | ORM models and migrations only — needed by FK references. No views, no business logic. |
+| `users/`         | User model definitions and migrations                                 |
+| `organization/`  | Organization model definitions and migrations                         |
+| `program/`       | Program model definitions and migrations                              |
+| `commcarehq/`    | Minimal — just `HQServer` model + migrations (needed by FKs)          |
 
 **Cross-app connections:** Workflow can create audits and tasks. AI agents modify workflows and solicitations. Coverage is standalone.
 
@@ -36,9 +48,7 @@ Use the MCP server's `get_form_json_paths` tool to discover correct field paths 
 
 ## Deployment
 
-Labs deploys to **AWS ECS Fargate** via `.github/workflows/deploy-labs.yml`. This is the only deploy workflow used on `labs-main`.
-
-**Ignore `.github/workflows/deploy.yml`** — that is the Kamal staging/production deploy from upstream `main`. It does not apply to labs and should not be modified or used. It may reappear when merging from upstream; just leave it alone.
+Labs deploys to **AWS ECS Fargate** via `.github/workflows/deploy-labs.yml`.
 
 - **Docker image:** Built from `Dockerfile`, pushed to ECR (`labs-jj-commcare-connect`)
 - **Gunicorn config:** `docker/start` — uses gthread workers, count set via `WEB_CONCURRENCY` env var (default 3)
@@ -60,10 +70,10 @@ pre-commit run --all-files          # Run linters/formatters
 
 ## Critical Warnings
 
-- **DO NOT** query Django ORM models (`Opportunity`, `User`, `Organization`) expecting production data. Use `LabsRecordAPIClient`.
+- **DO NOT** query Django ORM models (`Opportunity`, `User`, `Organization`) expecting production data — those tables are empty. Use `LabsRecordAPIClient`.
 - **DO NOT** use `config.settings.labs_aws` for local development. Use `config.settings.local` (the default). The `labs_aws` settings are only for the AWS deployment at `labs.connect.dimagi.com`.
 - **DO NOT** call `.save()` on `LabsUser` or `LocalLabsRecord` — they raise `NotImplementedError`. Use `LabsRecordAPIClient` for persistence.
-- **DO NOT** modify models in `opportunity/`, `organization/`, `program/`, or `users/` for labs features. That is production ORM code.
+- **DO NOT** modify models in the retained non-labs apps (`opportunity/`, `organization/`, `program/`, `users/`). They exist only for migrations and FK references.
 - New app URL prefixes must be added to `WHITELISTED_PREFIXES` in `commcare_connect/labs/middleware.py` or they will redirect to production.
 
 ## CommCare MCP Server

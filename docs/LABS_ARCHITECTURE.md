@@ -1,5 +1,7 @@
 # Labs Architecture
 
+Most production apps have been removed from this codebase. Only the 7 labs apps plus minimal retained apps (for models/migrations) remain. See [CLAUDE.md](../CLAUDE.md) for the full app map.
+
 ## System Overview
 
 ```
