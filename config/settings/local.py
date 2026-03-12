@@ -34,9 +34,6 @@ CELERY_TASK_STORE_EAGER_RESULT = True  # Store results even in eager mode so we 
 # CommCareConnect
 # ------------------------------------------------------------------------------
 
-# allow running the deid-scripts in development
-INSTALLED_APPS += ["commcare_connect.deid"]
-
 # Labs Mode Configuration
 # ------------------------------------------------------------------------------
 IS_LABS_ENVIRONMENT = True

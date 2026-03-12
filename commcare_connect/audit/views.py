@@ -141,17 +141,10 @@ class ExperimentAuditListView(LoginRequiredMixin, SingleTableView):
             else:
                 context["token_expires_at"] = None
         else:
-            # Normal mode: check database for SocialAccount
-            from allauth.socialaccount.models import SocialAccount, SocialToken
-
-            try:
-                social_account = SocialAccount.objects.get(user=self.request.user, provider="connect")
-                social_token = SocialToken.objects.get(account=social_account)
-                context["has_connect_token"] = True
-                context["token_expires_at"] = social_token.expires_at
-            except (SocialAccount.DoesNotExist, SocialToken.DoesNotExist):
-                context["has_connect_token"] = False
-                context["token_expires_at"] = None
+            # allauth SocialAccount was removed during labs simplification.
+            # Non-labs users won't have Connect tokens.
+            context["has_connect_token"] = False
+            context["token_expires_at"] = None
 
         return context
 

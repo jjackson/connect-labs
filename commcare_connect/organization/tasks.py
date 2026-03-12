@@ -1,4 +1,4 @@
-from allauth.utils import build_absolute_uri
+from django.contrib.sites.models import Site
 from django.urls import reverse
 
 from commcare_connect.organization.models import UserOrganizationMembership
@@ -12,7 +12,12 @@ def send_org_invite(membership_id, host_user_id):
     if not membership.user.email:
         return
     location = reverse("organization:accept_invite", args=(membership.organization.slug, membership.invite_id))
-    invite_url = build_absolute_uri(None, location)
+    try:
+        site = Site.objects.get_current()
+        domain = site.domain
+    except Exception:
+        domain = "localhost"
+    invite_url = f"https://{domain}{location}"
     message = f"""Hi,
 
 You have been invited to join {membership.organization.name} on Connect by {host_user.name}.

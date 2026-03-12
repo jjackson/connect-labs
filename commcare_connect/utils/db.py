@@ -1,15 +1,11 @@
 import uuid
 
-import waffle
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import QuerySet
 from django.http import Http404
 from django.shortcuts import get_list_or_404, get_object_or_404
 from django.utils.text import slugify
-
-# Inline constant — flags app was removed during labs simplification
-API_UUID = "API_UUID"
 
 
 class BaseModel(models.Model):
@@ -40,28 +36,18 @@ def slugify_uniquely(value, model, slugfield="slug"):
 
 def get_object_or_list_by_uuid_or_int(queryset, pk_or_pk_list, uuid_field, int_field="pk"):
     """
-    Fetch object correctly based on whether API_UUID waffle switch is enabled.
+    Fetch object by UUID or int ID. Supports both int IDs and UUIDs.
 
-    When the switch is enabled, only the UUID model field will be used. When disabled, both
-    int IDs and UUIDs are supported.
+    Note: waffle switch logic was removed during labs simplification.
     """
     is_pk_list = isinstance(pk_or_pk_list, (list, tuple))
-    if waffle.switch_is_active(API_UUID):
-        try:
-            if is_pk_list:
-                uuid_list = [uuid.UUID(val) for val in pk_or_pk_list]
-                return get_list_or_404(queryset, **{f"{uuid_field}__in": uuid_list})
-            return get_object_or_404(queryset, **{uuid_field: pk_or_pk_list})
-        except (ValidationError, ValueError):
-            raise Http404("Invalid UUID format.")
-    else:
-        func = get_list_by_uuid_or_int if is_pk_list else get_object_by_uuid_or_int
-        return func(
-            queryset,
-            pk_or_pk_list,
-            uuid_field=uuid_field,
-            int_field=int_field,
-        )
+    func = get_list_by_uuid_or_int if is_pk_list else get_object_by_uuid_or_int
+    return func(
+        queryset,
+        pk_or_pk_list,
+        uuid_field=uuid_field,
+        int_field=int_field,
+    )
 
 
 def get_object_by_uuid_or_int(

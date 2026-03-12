@@ -7,8 +7,6 @@ from django.views.generic import TemplateView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.authtoken.views import obtain_auth_token
 
-from commcare_connect.organization.views import organization_create
-
 from . import views
 
 urlpatterns = [
@@ -17,17 +15,8 @@ urlpatterns = [
     path("health/", views.health_check, name="health_check"),
     path(".well-known/assetlinks.json", views.assetlinks_json, name="assetlinks_json"),
     path("o/", include("oauth2_provider.urls", namespace="oauth2_provider")),
-    # User management
-    path("users/", include("commcare_connect.users.urls", namespace="users")),
-    # Your stuff: custom urls includes go here
-    path("register/organization/", organization_create, name="organization_create"),
-    path("solicitations/", include("commcare_connect.solicitations.urls", namespace="solicitations")),
+    # Labs apps
     path("solicitations_new/", include("commcare_connect.solicitations_new.urls", namespace="solicitations_new")),
-    path(
-        "a/<slug:org_slug>/solicitations/",
-        include("commcare_connect.solicitations.urls", namespace="org_solicitations"),
-    ),
-    path("a/<slug:org_slug>/", include("commcare_connect.organization.urls")),
     path("tasks/", include("commcare_connect.tasks.urls", namespace="tasks")),
     path("audit/", include("commcare_connect.audit.urls", namespace="audit")),
     path("coverage/", include("commcare_connect.coverage.urls", namespace="coverage")),

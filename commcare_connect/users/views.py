@@ -21,7 +21,7 @@ from rest_framework.decorators import api_view, authentication_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from waffle.models import Switch
+# waffle was removed from INSTALLED_APPS during labs simplification
 
 from commcare_connect.opportunity.models import HQApiKey, Opportunity, OpportunityAccess, UserInvite, UserInviteStatus
 from commcare_connect.users.forms import ManualUserOTPForm
@@ -237,12 +237,9 @@ class CheckInvitedUserView(ClientProtectedResourceMixin, View):
 
 @method_decorator(csrf_exempt, name="dispatch")
 class UserToggleView(ClientProtectedResourceMixin, View):
-    # This takes a username or phone_number query parameter
-    # but ignoring for now since all toggles are global switches
-    # Note: Flag model was removed during labs simplification; only switches remain
+    # waffle was removed from INSTALLED_APPS during labs simplification
     def get(self, request, *args, **kwargs):
-        switches = list(Switch.objects.all().values("name", "active", "created", "modified"))
-        return JsonResponse({"toggles": switches})
+        return JsonResponse({"toggles": []})
 
 
 @method_decorator(csrf_exempt, name="dispatch")

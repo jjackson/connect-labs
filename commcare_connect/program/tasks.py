@@ -1,8 +1,18 @@
-from allauth.utils import build_absolute_uri
+from django.contrib.sites.models import Site
 from django.db.models import Q
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils.translation import gettext as _
+
+
+def _build_absolute_uri(path):
+    """Replacement for allauth.utils.build_absolute_uri (removed during labs simplification)."""
+    try:
+        site = Site.objects.get_current()
+        domain = site.domain
+    except Exception:
+        domain = "localhost"
+    return f"https://{domain}{path}"
 
 from commcare_connect.opportunity.models import (
     CompletedWork,
@@ -72,8 +82,8 @@ def send_opportunity_created_email(opportunity_id):
     if not recipient_emails:
         return
 
-    opportunity_url = build_absolute_uri(
-        None, reverse("opportunity:detail", kwargs={"org_slug": nm_org.slug, "opp_id": opportunity_id})
+    opportunity_url = _build_absolute_uri(
+        reverse("opportunity:detail", kwargs={"org_slug": nm_org.slug, "opp_id": opportunity_id})
     )
 
     subject = f"New Opportunity Created: {opportunity.name}"
@@ -101,7 +111,7 @@ def _get_membership_users_emails(organization):
 
 
 def _get_program_home_url(org_slug):
-    return build_absolute_uri(None, reverse("program:home", kwargs={"org_slug": org_slug}))
+    return _build_absolute_uri(reverse("program:home", kwargs={"org_slug": org_slug}))
 
 
 @celery_app.task()
@@ -164,8 +174,7 @@ def _send_org_email_for_opportunities(organization, opportunities, recipient_ema
 
     opportunity_links = []
     for opportunity in opportunities:
-        worker_deliver_url = build_absolute_uri(
-            None,
+        worker_deliver_url = _build_absolute_uri(
             reverse("opportunity:worker_deliver", kwargs={"org_slug": organization.slug, "opp_id": opportunity.id}),
         )
         opportunity_links.append({"name": opportunity.name, "url": worker_deliver_url})

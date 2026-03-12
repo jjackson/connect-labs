@@ -1,7 +1,18 @@
-from allauth.utils import build_absolute_uri
 from django.conf import settings
+from django.contrib.sites.models import Site
 from django.urls import reverse
 from twilio.rest import Client
+
+
+def _build_absolute_uri(path):
+    """Replacement for allauth.utils.build_absolute_uri (removed during labs simplification)."""
+    protocol = "https"
+    try:
+        site = Site.objects.get_current()
+        domain = site.domain
+    except Exception:
+        domain = "localhost"
+    return f"{protocol}://{domain}{path}"
 
 
 class SMSException(Exception):
@@ -18,7 +29,7 @@ def send_sms(to, body):
         to=to,
         from_=sender,
         messaging_service_sid=settings.TWILIO_MESSAGING_SERVICE,
-        status_callback=build_absolute_uri(None, reverse("users:sms_status_callback")),
+        status_callback=_build_absolute_uri(reverse("users:sms_status_callback")),
     )
 
 

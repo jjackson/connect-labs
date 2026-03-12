@@ -68,14 +68,9 @@ class TaskDataAccess:
             if hasattr(request, "session") and "labs_oauth" in request.session:
                 access_token = request.session["labs_oauth"].get("access_token")
             elif user:
-                from allauth.socialaccount.models import SocialAccount, SocialToken
-
-                try:
-                    social_account = SocialAccount.objects.get(user=user, provider="connect")
-                    social_token = SocialToken.objects.get(account=social_account)
-                    access_token = social_token.token
-                except (SocialAccount.DoesNotExist, SocialToken.DoesNotExist):
-                    pass
+                # allauth SocialAccount was removed during labs simplification.
+                # Non-labs users won't have Connect tokens via this path.
+                pass
 
         if not access_token:
             raise ValueError("OAuth access token required for task data access")

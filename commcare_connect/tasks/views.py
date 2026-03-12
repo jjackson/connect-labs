@@ -99,18 +99,7 @@ class TaskListView(LoginRequiredMixin, ListView):
         # For LabsUser, check session
         if hasattr(self.request.user, "is_labs_user") and self.request.user.is_labs_user:
             has_token = True  # LabsUser always has token via OAuth
-
-        # For regular Django users, check SocialToken
-        else:
-            from allauth.socialaccount.models import SocialAccount, SocialToken
-
-            try:
-                social_account = SocialAccount.objects.get(user=self.request.user, provider="connect")
-                social_token = SocialToken.objects.get(account=social_account)
-                has_token = True
-                token_expires_at = social_token.expires_at
-            except (SocialAccount.DoesNotExist, SocialToken.DoesNotExist):
-                pass
+        # allauth SocialAccount was removed during labs simplification.
 
         context.update(
             {
@@ -146,18 +135,7 @@ class TaskCreationWizardView(LoginRequiredMixin, TemplateView):
         # For LabsUser, check session
         if hasattr(self.request.user, "is_labs_user") and self.request.user.is_labs_user:
             has_token = True
-
-        # For regular Django users, check SocialToken
-        else:
-            from allauth.socialaccount.models import SocialAccount, SocialToken
-
-            try:
-                social_account = SocialAccount.objects.get(user=self.request.user, provider="connect")
-                social_token = SocialToken.objects.get(account=social_account)
-                has_token = True
-                token_expires_at = social_token.expires_at
-            except (SocialAccount.DoesNotExist, SocialToken.DoesNotExist):
-                pass
+        # allauth SocialAccount was removed during labs simplification.
 
         # Pass labs_context to template for pre-selection
         labs_context = getattr(self.request, "labs_context", {})
@@ -244,16 +222,7 @@ class TaskCreateEditView(LoginRequiredMixin, TemplateView):
         token_expires_at = None
         if hasattr(self.request.user, "is_labs_user") and self.request.user.is_labs_user:
             has_token = True
-        else:
-            from allauth.socialaccount.models import SocialAccount, SocialToken
-
-            try:
-                social_account = SocialAccount.objects.get(user=self.request.user, provider="connect")
-                social_token = SocialToken.objects.get(account=social_account)
-                has_token = True
-                token_expires_at = social_token.expires_at
-            except (SocialAccount.DoesNotExist, SocialToken.DoesNotExist):
-                pass
+        # allauth SocialAccount was removed during labs simplification.
 
         # If editing, load the existing task
         task_data = None

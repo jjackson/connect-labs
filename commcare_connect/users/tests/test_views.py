@@ -11,8 +11,6 @@ from django.http import HttpRequest
 from django.test import RequestFactory
 from django.urls import reverse
 
-from waffle.models import Switch
-
 from commcare_connect.organization.models import Organization
 from commcare_connect.users.forms import UserAdminChangeForm
 from commcare_connect.users.models import ConnectIDUserLink, User
@@ -165,9 +163,9 @@ class TestUserToggleView:
         assert "toggles" in data
         assert data["toggles"] == []
 
-    def test_toggles(self, mobile_user: User, rf: RequestFactory):
-        # flags app removed during labs simplification; only test switches
-        Switch.objects.create(name="TEST_SWITCH", active=True)
+    def test_toggles_returns_empty(self, mobile_user: User, rf: RequestFactory):
+        # waffle was removed from INSTALLED_APPS during labs simplification;
+        # UserToggleView now always returns empty toggles.
         user_toggle_view = UserToggleView.as_view()
         request = rf.get("/fake-url/", data={"username": mobile_user.username})
         request.user = mobile_user
@@ -180,10 +178,4 @@ class TestUserToggleView:
 
         assert response.status_code == 200
         assert "toggles" in data
-        toggles_dict = {toggle["name"]: toggle for toggle in data["toggles"]}
-
-        assert "TEST_SWITCH" in toggles_dict
-        switch_response = toggles_dict["TEST_SWITCH"]
-        assert switch_response["active"] is True
-        assert "created" in switch_response
-        assert "modified" in switch_response
+        assert data["toggles"] == []

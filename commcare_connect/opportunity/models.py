@@ -12,12 +12,16 @@ from django.utils.dateparse import parse_datetime
 from django.utils.functional import cached_property
 from django.utils.timezone import now
 from django.utils.translation import gettext, gettext_lazy
-from waffle import switch_is_active
-
 from commcare_connect.commcarehq.models import HQServer
 from commcare_connect.organization.models import Organization
 
-# Inline constant — flags app was removed during labs simplification
+
+# Stub for waffle switch_is_active — waffle was removed from INSTALLED_APPS during labs simplification.
+# Always returns False (feature switches are off in labs).
+def switch_is_active(name):
+    return False
+
+
 UPDATES_TO_MARK_AS_PAID_WORKFLOW = "UPDATES_TO_MARK_AS_PAID_WORKFLOW"
 from commcare_connect.users.models import User, UserCredential
 from commcare_connect.utils.db import BaseModel, slugify_uniquely
