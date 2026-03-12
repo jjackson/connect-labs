@@ -5,8 +5,7 @@ from django.db import models
 from django.http import Http404
 from waffle.testutils import override_switch
 
-from commcare_connect.flags.switch_names import API_UUID
-from commcare_connect.utils.db import get_object_by_uuid_or_int, get_object_or_list_by_uuid_or_int
+from commcare_connect.utils.db import API_UUID, get_object_by_uuid_or_int, get_object_or_list_by_uuid_or_int
 
 
 class Example(models.Model):

@@ -14,7 +14,6 @@ from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from rest_framework.test import APIRequestFactory
 
-from commcare_connect.data_export.views import LabsRecordDataView
 from commcare_connect.labs.integrations.connect.cli import TokenManager
 from commcare_connect.opportunity.models import Opportunity
 
@@ -23,9 +22,8 @@ class Command(BaseCommand):
     help = "Test LabsRecord creation locally with production data"
 
     def handle(self, *args, **options):
-        self.stdout.write("=" * 80)
-        self.stdout.write("TEST LABSRECORD BUG LOCALLY WITH PRODUCTION DATA")
-        self.stdout.write("=" * 80)
+        self.stdout.write(self.style.ERROR("This command is no longer available: data_export app was removed."))
+        return
 
         # Step 1: Get OAuth token for production
         self.stdout.write("\n[1] Getting OAuth token...")

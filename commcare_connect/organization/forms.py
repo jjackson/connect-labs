@@ -3,7 +3,8 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext, gettext_lazy
 
-from commcare_connect.opportunity.forms import CHECKBOX_CLASS
+# Inline constant — opportunity.forms was removed during labs simplification
+CHECKBOX_CLASS = "simple-toggle"
 from commcare_connect.organization.models import LLOEntity, Organization, UserOrganizationMembership
 from commcare_connect.users.models import User
 from commcare_connect.utils.forms import CreatableModelChoiceField

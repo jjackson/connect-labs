@@ -8,7 +8,8 @@ from django.http import Http404
 from django.shortcuts import get_list_or_404, get_object_or_404
 from django.utils.text import slugify
 
-from commcare_connect.flags.switch_names import API_UUID
+# Inline constant — flags app was removed during labs simplification
+API_UUID = "API_UUID"
 
 
 class BaseModel(models.Model):

@@ -15,8 +15,10 @@ from django.utils.translation import gettext, gettext_lazy
 from waffle import switch_is_active
 
 from commcare_connect.commcarehq.models import HQServer
-from commcare_connect.flags.switch_names import UPDATES_TO_MARK_AS_PAID_WORKFLOW
 from commcare_connect.organization.models import Organization
+
+# Inline constant — flags app was removed during labs simplification
+UPDATES_TO_MARK_AS_PAID_WORKFLOW = "UPDATES_TO_MARK_AS_PAID_WORKFLOW"
 from commcare_connect.users.models import User, UserCredential
 from commcare_connect.utils.db import BaseModel, slugify_uniquely
 
@@ -516,14 +518,11 @@ class ExchangeRate(models.Model):
 
     @classmethod
     def latest_exchange_rate(cls, currency_code, date):
-        from commcare_connect.opportunity.tasks import fetch_exchange_rates
-
         latest_rates = cls.objects.filter(currency_code=currency_code, rate_date__lte=date).order_by("-rate_date")
         if latest_rates:
             return latest_rates.first()
-        else:
-            date = date.replace(day=1)
-            return fetch_exchange_rates(date, currency_code)
+        # opportunity.tasks was removed during labs simplification
+        raise NotImplementedError("fetch_exchange_rates is not available in the labs environment")
 
 
 class InvoiceStatus(models.TextChoices):

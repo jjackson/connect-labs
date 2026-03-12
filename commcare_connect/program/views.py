@@ -20,8 +20,10 @@ from commcare_connect.opportunity.models import (
     VisitReviewStatus,
     VisitValidationStatus,
 )
-from commcare_connect.opportunity.views import OpportunityInit, OpportunityInitUpdate
+from django.views.generic import CreateView, UpdateView as DjangoUpdateView
+
 from commcare_connect.organization.decorators import (
+    OrganizationProgramManagerMixin,
     org_admin_required,
     org_program_manager_required,
     org_viewer_required,
@@ -36,6 +38,35 @@ from commcare_connect.program.tasks import (
 )
 
 from .utils import is_program_manager
+
+
+# Stubs for removed opportunity.views base classes
+class OpportunityInit(OrganizationProgramManagerMixin, CreateView):
+    """Stub — opportunity.views was removed during labs simplification."""
+
+    template_name = "opportunity/opportunity_init.html"
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        kwargs["org_slug"] = self.request.org.slug
+        return kwargs
+
+
+class OpportunityInitUpdate(OrganizationProgramManagerMixin, DjangoUpdateView):
+    """Stub — opportunity.views was removed during labs simplification."""
+
+    model = Opportunity
+    template_name = "opportunity/opportunity_init.html"
+    context_object_name = "opportunity"
+    slug_field = "opportunity_id"
+    slug_url_kwarg = "opp_id"
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        kwargs["org_slug"] = self.request.org.slug
+        return kwargs
 
 
 class ProgramManagerMixin(LoginRequiredMixin, UserPassesTestMixin):

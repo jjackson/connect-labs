@@ -1,7 +1,5 @@
 from django.conf import settings
 
-from commcare_connect.flags.flag_names import OPEN_CHAT_STUDIO_WIDGET
-from commcare_connect.flags.models import Flag
 from commcare_connect.utils.tables import DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS
 
 
@@ -24,9 +22,10 @@ def gtm_context(request):
 
 
 def chat_widget_context(request):
+    # flags app was removed during labs simplification; chat widget is disabled
     creds_configured = bool(settings.CHATBOT_ID and settings.CHATBOT_EMBED_KEY)
     return {
-        "chat_widget_enabled": creds_configured and Flag.is_flag_active_for_request(request, OPEN_CHAT_STUDIO_WIDGET),
+        "chat_widget_enabled": False,
         "chatbot_id": settings.CHATBOT_ID,
         "chatbot_embed_key": settings.CHATBOT_EMBED_KEY,
     }

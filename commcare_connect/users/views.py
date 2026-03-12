@@ -1,8 +1,8 @@
-from allauth.account.models import transaction
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.db import transaction
 from django.contrib.messages.views import SuccessMessageMixin
 from django.http import HttpResponse, JsonResponse
 from django.middleware.csrf import get_token
@@ -23,11 +23,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from waffle.models import Switch
 
-from commcare_connect.connect_id_client.main import fetch_demo_user_tokens, get_user_otp
-from commcare_connect.connect_id_client.models import ConnectIdUser
-from commcare_connect.flags.models import Flag
 from commcare_connect.opportunity.models import HQApiKey, Opportunity, OpportunityAccess, UserInvite, UserInviteStatus
-from commcare_connect.opportunity.tasks import update_user_and_send_invite
 from commcare_connect.users.forms import ManualUserOTPForm
 from commcare_connect.utils.db import get_object_or_list_by_uuid_or_int
 from commcare_connect.utils.error_codes import ErrorCodes
@@ -180,8 +176,8 @@ class AcceptInviteView(View):
 @permission_required(DEMO_USER_ACCESS)
 @require_GET
 def demo_user_tokens(request):
-    users = fetch_demo_user_tokens()
-    return render(request, "users/demo_tokens.html", {"demo_users": users})
+    # connect_id_client was removed during labs simplification
+    return HttpResponse("Demo user tokens not available in labs environment", status=501)
 
 
 class SMSStatusCallbackView(APIView):
@@ -243,39 +239,17 @@ class CheckInvitedUserView(ClientProtectedResourceMixin, View):
 class UserToggleView(ClientProtectedResourceMixin, View):
     # This takes a username or phone_number query parameter
     # but ignoring for now since all toggles are global switches
+    # Note: Flag model was removed during labs simplification; only switches remain
     def get(self, request, *args, **kwargs):
-        user = None
-        username = request.GET.get("username")
-        number = request.GET.get("number")
-        active_flags = set()
-        users = []
-        if username is not None:
-            users = User.objects.filter(username=username)
-        elif number is not None:
-            users = User.objects.filter(phone_number=number)
-        for user in users:
-            active_flags.update(Flag.active_flags_for_user(user, True).values_list("name", flat=True))
-        all_flags = list(Flag.objects.all().values("name", "created", "modified"))
-        for flag in all_flags:
-            flag["active"] = flag["name"] in active_flags
         switches = list(Switch.objects.all().values("name", "active", "created", "modified"))
-        toggles = all_flags + switches
-        return JsonResponse({"toggles": toggles})
+        return JsonResponse({"toggles": switches})
 
 
 @method_decorator(csrf_exempt, name="dispatch")
 class ResendInvitesView(ClientProtectedResourceMixin, View):
     def post(self, request, *args, **kwargs):
-        username = request.POST.get("username")
-        name = request.POST.get("name")
-        phone_number = request.POST.get("phone_number")
-        user = ConnectIdUser(username=username, name=name, phone_number=phone_number)
-        opps = UserInvite.objects.filter(
-            phone_number=user.phone_number, status=UserInviteStatus.not_found
-        ).values_list("opportunity_id", flat=True)
-        for opp_id in opps:
-            update_user_and_send_invite(user, opp_id)
-        return HttpResponse(status=200)
+        # connect_id_client and opportunity.tasks were removed during labs simplification
+        return HttpResponse("Resend invites not available in labs environment", status=501)
 
 
 class RetrieveUserOTPView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
@@ -288,16 +262,11 @@ class RetrieveUserOTPView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
         return reverse("users:connect_user_otp")
 
     def form_valid(self, form):
-        otp = get_user_otp(form.cleaned_data["phone_number"])
-        if otp is None:
-            messages.error(
-                self.request,
-                "Failed to fetch OTP. Please make sure the number is correct and "
-                "that the user has started their device seating process.",
-            )
-        else:
-            messages.success(self.request, f"The user's OTP is: {otp}")
-
+        # connect_id_client was removed during labs simplification
+        messages.error(
+            self.request,
+            "OTP retrieval is not available in the labs environment.",
+        )
         return super().form_valid(form)
 
     def form_invalid(self, form):
@@ -312,6 +281,7 @@ def internal_features(request):
     if not request.user.show_internal_features:
         return redirect("home")
 
+    # reports and flags apps were removed during labs simplification
     features = [
         {
             "perm": OTP_ACCESS,
@@ -324,24 +294,6 @@ def internal_features(request):
             "name": "Demo Users",
             "description": "Get OTPs for Demo Users.",
             "url": reverse("users:demo_users"),
-        },
-        {
-            "perm": KPI_REPORT_ACCESS,
-            "name": "KPI Report",
-            "description": "Access the KPI reports dashboard.",
-            "url": reverse("reports:delivery_stats_report"),
-        },
-        {
-            "perm": ALL_ORG_ACCESS,
-            "name": "Invoice Report",
-            "description": "Access the Invoice reports dashboard.",
-            "url": reverse("reports:invoice_report"),
-        },
-        {
-            "perm": PRODUCT_FEATURES_ACCESS,
-            "name": "Toggles & Switches",
-            "description": "Manage feature flags and switches.",
-            "url": reverse("flags:feature_flags"),
         },
     ]
 
