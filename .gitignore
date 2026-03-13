@@ -359,3 +359,17 @@ docs/superpowers/plans/
 
 # Debug/screenshot images in root directory
 /*.png
+
+# Scratch/debug scripts in root
+demo_decorator.py
+screenshot_timeline.py
+
+# Credential/token files
+.cli_token
+registry_password.sh
+
+# Doc generation dry-run output
+docs/.dry-run/
+
+# Local debug/utility scripts
+scripts/
