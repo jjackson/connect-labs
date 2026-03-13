@@ -131,7 +131,7 @@ def test_image_types_returns_unique_question_ids(labs_client):
 
 
 @override_settings(**LABS_SETTINGS)
-def test_image_types_requires_auth():
+def test_image_types_requires_auth(db):
     """Unauthenticated request redirects to login."""
     client = Client()
     response = client.get("/audit/api/opportunity/42/image-questions/")
