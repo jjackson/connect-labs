@@ -15,12 +15,14 @@ from urllib.parse import urlencode
 import httpx
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth import login, logout
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
 from commcare_connect.labs.integrations.connect.oauth import fetch_user_organization_data, introspect_token
+from commcare_connect.users.models import User
 
 logger = logging.getLogger(__name__)
 
@@ -217,6 +219,22 @@ def labs_oauth_callback(request: HttpRequest) -> HttpResponse:
         "organization_data": org_data or {},  # Store empty dict if API fails
     }
 
+    # Create or update Django User from OAuth profile
+    first_name = profile_data.get("first_name", "")
+    last_name = profile_data.get("last_name", "")
+    name = f"{first_name} {last_name}".strip() or profile_data.get("username", "")
+
+    user, created = User.objects.update_or_create(
+        username=profile_data.get("username"),
+        defaults={
+            "email": profile_data.get("email", ""),
+            "name": name,
+        },
+    )
+
+    # Log the user in via Django's standard auth
+    login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+
     # Clean up temporary session keys
     request.session.pop("oauth_state", None)
     request.session.pop("oauth_code_verifier", None)
@@ -244,8 +262,8 @@ def labs_logout(request: HttpRequest) -> HttpResponse:
     if labs_oauth:
         username = labs_oauth.get("user_profile", {}).get("username")
 
-    # Clear OAuth data from session
-    request.session.pop("labs_oauth", None)
+    # Django logout clears the session entirely
+    logout(request)
 
     if username:
         logger.info(f"User {username} logged out")
