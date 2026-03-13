@@ -31,7 +31,7 @@ class ManagerRequiredMixin(LabsLoginRequiredMixin, UserPassesTestMixin):
     """Require authenticated labs user (manager access)."""
 
     def test_func(self):
-        return getattr(self.request.user, "is_labs_user", False)
+        return self.request.user.is_authenticated
 
 
 # -- Helpers ----------------------------------------------------------------

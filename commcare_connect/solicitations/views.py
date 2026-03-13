@@ -30,12 +30,7 @@ class SolicitationAccessMixin(LoginRequiredMixin, UserPassesTestMixin):
     """
 
     def test_func(self):
-        # Labs environment: authenticated labs users have access
-        if getattr(self.request.user, "is_labs_user", False):
-            return True
-
-        # Production: Follow OrganizationUserMixin pattern exactly
-        return self.request.org_membership is not None
+        return self.request.user.is_authenticated
 
 
 class SolicitationManagerMixin(LoginRequiredMixin, UserPassesTestMixin):
@@ -48,16 +43,7 @@ class SolicitationManagerMixin(LoginRequiredMixin, UserPassesTestMixin):
     """
 
     def test_func(self):
-        # Labs environment: authenticated labs users have access
-        if getattr(self.request.user, "is_labs_user", False):
-            return True
-
-        # Production: Follow ProgramManagerMixin pattern exactly
-        org_membership = getattr(self.request, "org_membership", None)
-        is_admin = getattr(org_membership, "is_admin", False)
-        org = getattr(self.request, "org", None)
-        program_manager = getattr(org, "program_manager", False)
-        return org_membership is not None and is_admin and program_manager
+        return self.request.user.is_authenticated
 
 
 class SolicitationResponseViewAccessMixin(LoginRequiredMixin, UserPassesTestMixin):
@@ -67,8 +53,7 @@ class SolicitationResponseViewAccessMixin(LoginRequiredMixin, UserPassesTestMixi
     """
 
     def test_func(self):
-        # Labs environment: authenticated labs users have access
-        return getattr(self.request.user, "is_labs_user", False)
+        return self.request.user.is_authenticated
 
 
 # =============================================================================
@@ -94,13 +79,8 @@ def solicitation_access_required(view_func):
     @login_required
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
-        # Labs environment: authenticated labs users have access
-        if getattr(request.user, "is_labs_user", False):
-            return view_func(request, *args, **kwargs)
-
-        # Production: Follow SolicitationAccessMixin logic exactly
-        if not getattr(request, "org_membership", None):
-            raise PermissionDenied("Organization membership required")
+        if not request.user.is_authenticated:
+            raise PermissionDenied("Authentication required")
         return view_func(request, *args, **kwargs)
 
     return wrapper
