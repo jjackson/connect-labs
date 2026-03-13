@@ -29,6 +29,7 @@ from commcare_connect.audit.models import AuditSessionRecord
 from commcare_connect.audit.tables import AuditTable
 from commcare_connect.labs.analysis.data_access import get_flw_names_for_opportunity
 from commcare_connect.labs.analysis.sse_streaming import CeleryTaskStreamView
+from commcare_connect.labs.context import get_org_data
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +49,7 @@ class ExperimentAuditCreateView(LoginRequiredMixin, TemplateView):
         context["default_program_id"] = labs_context.get("program_id") or ""
 
         # Pass opportunities from user's org_data (already fetched from opp_org_program API)
-        org_data = getattr(self.request.user, "_org_data", {})
+        org_data = get_org_data(self.request)
         opportunities = org_data.get("opportunities", [])
 
         # Filter by program if one is selected in labs_context
@@ -183,10 +184,10 @@ class ExperimentBulkAssessmentView(LoginRequiredMixin, DetailView):
         opportunity_id = session.opportunity_id
 
         # Look up org_slug from user's OAuth data (opportunities list)
-        # Each opportunity in _org_data has an "organization" field with the org slug
+        # Each opportunity in session org data has an "organization" field with the org slug
         org_slug = ""
         if opportunity_id:
-            org_data = getattr(self.request.user, "_org_data", {})
+            org_data = get_org_data(self.request)
             opportunities = org_data.get("opportunities", [])
             for opp in opportunities:
                 if opp.get("id") == opportunity_id:
@@ -1397,7 +1398,7 @@ class VisitDetailFromProductionView(LoginRequiredMixin, TemplateView):
 
             # If not in context, try to find visit across all opportunities
             if not opportunity_id:
-                org_data = getattr(self.request.user, "_org_data", {})
+                org_data = get_org_data(self.request)
                 opportunities = org_data.get("opportunities", [])
                 for opp in opportunities:
                     opp_id = opp.get("id")
@@ -1409,7 +1410,7 @@ class VisitDetailFromProductionView(LoginRequiredMixin, TemplateView):
                             break
             else:
                 # Get org_slug from user's org_data
-                org_data = getattr(self.request.user, "_org_data", {})
+                org_data = get_org_data(self.request)
                 opportunities = org_data.get("opportunities", [])
                 for opp in opportunities:
                     if opp.get("id") == opportunity_id:

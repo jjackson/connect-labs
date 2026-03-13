@@ -17,6 +17,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.views.generic import ListView, TemplateView
 
+from commcare_connect.labs.context import get_org_data
 from commcare_connect.labs.integrations.ocs.api_client import OCSAPIError, OCSDataAccess
 from commcare_connect.tasks.data_access import TaskDataAccess
 from commcare_connect.tasks.models import TaskRecord
@@ -93,13 +94,8 @@ class TaskListView(LoginRequiredMixin, ListView):
         action_types = ["warning", "deactivation"]
 
         # Check for Connect OAuth token
-        has_token = False
+        has_token = self.request.user.is_authenticated
         token_expires_at = None
-
-        # For LabsUser, check session
-        if hasattr(self.request.user, "is_labs_user") and self.request.user.is_labs_user:
-            has_token = True  # LabsUser always has token via OAuth
-        # allauth SocialAccount was removed during labs simplification.
 
         context.update(
             {
@@ -129,13 +125,8 @@ class TaskCreationWizardView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
 
         # Check for Connect OAuth token
-        has_token = False
+        has_token = self.request.user.is_authenticated
         token_expires_at = None
-
-        # For LabsUser, check session
-        if hasattr(self.request.user, "is_labs_user") and self.request.user.is_labs_user:
-            has_token = True
-        # allauth SocialAccount was removed during labs simplification.
 
         # Pass labs_context to template for pre-selection
         labs_context = getattr(self.request, "labs_context", {})
@@ -143,7 +134,7 @@ class TaskCreationWizardView(LoginRequiredMixin, TemplateView):
         context["default_program_id"] = labs_context.get("program_id") or ""
 
         # Pass opportunities from user's org_data (already fetched from opp_org_program API)
-        org_data = getattr(self.request.user, "_org_data", {})
+        org_data = get_org_data(self.request)
         opportunities = org_data.get("opportunities", [])
 
         # Filter by program if one is selected in labs_context
@@ -199,7 +190,7 @@ class TaskCreateEditView(LoginRequiredMixin, TemplateView):
         opportunity_id = labs_context.get("opportunity_id")
 
         # Get opportunity name from user's org_data
-        org_data = getattr(self.request.user, "_org_data", {})
+        org_data = get_org_data(self.request)
         opportunities = org_data.get("opportunities", [])
         opportunity_name = ""
         for opp in opportunities:
@@ -218,11 +209,8 @@ class TaskCreateEditView(LoginRequiredMixin, TemplateView):
                 logger.warning(f"Failed to load FLW list for opportunity {opportunity_id}: {e}")
 
         # Check for Connect OAuth token
-        has_token = False
+        has_token = self.request.user.is_authenticated
         token_expires_at = None
-        if hasattr(self.request.user, "is_labs_user") and self.request.user.is_labs_user:
-            has_token = True
-        # allauth SocialAccount was removed during labs simplification.
 
         # If editing, load the existing task
         task_data = None
@@ -258,7 +246,7 @@ class TaskCreateEditView(LoginRequiredMixin, TemplateView):
         # Get manager names from opportunity's org/program references
         labs_context = getattr(self.request, "labs_context", {})
         opportunity = labs_context.get("opportunity", {})
-        org_data = getattr(self.request.user, "_org_data", {})
+        org_data = get_org_data(self.request)
 
         # Look up organization name (Network Manager) by slug
         org_slug = opportunity.get("organization")
@@ -578,7 +566,7 @@ def task_update(request, task_id):
             # Set assigned_to_name based on type - look up actual names from labs_context
             labs_context = getattr(request, "labs_context", {})
             opportunity = labs_context.get("opportunity", {})
-            org_data = getattr(request.user, "_org_data", {})
+            org_data = get_org_data(request)
 
             if body["assigned_to_type"] == "self":
                 task.data["assigned_to_name"] = actor_name
