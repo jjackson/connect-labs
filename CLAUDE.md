@@ -7,7 +7,7 @@ Most production apps have been removed from this codebase. The remaining non-lab
 ## Architecture at a Glance
 
 - **OAuth session auth** — no Django User model for labs. `LabsUser` is transient (created from session each request, never saved to DB). Auth flow: `/labs/login/` → production OAuth → callback stores token in session.
-- **All data via API** — `LabsRecordAPIClient` (`commcare_connect/labs/integrations/connect/api_client.py`) makes HTTP calls to `/export/labs_record/` on production for all CRUD.
+- **All data via API** — `LabsRecordAPIClient` (`commcare_connect/labs/integrations/connect/api_client.py`) makes HTTP calls to `/export/labs_record/` on production for all CRUD. The production data export API code lives in the **`dimagi/commcare-connect`** repo at `commcare_connect/data_export/` (views, serializers, URLs). Use `gh api repos/dimagi/commcare-connect/contents/commcare_connect/data_export/views.py` to read it. **Note:** The CSV export serializes Python dicts with `str()`, producing Python repr format (single quotes), not JSON — use `ast.literal_eval` as fallback when parsing.
 - **data_access.py pattern** — each app wraps `LabsRecordAPIClient` in a `data_access.py` class with domain-specific methods.
 - **Proxy models** — `LocalLabsRecord` subclasses provide typed `@property` access to JSON data. They cannot be `.save()`d locally.
 - **Context middleware** — `request.labs_context` provides `opportunity_id`, `program_id`, `organization_id` on every request.

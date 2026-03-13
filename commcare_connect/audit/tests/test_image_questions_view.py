@@ -47,14 +47,21 @@ def _build_csv_line(fields):
     return buf.getvalue().rstrip("\r\n")
 
 
-def _build_csv_lines(rows):
-    """Build properly-quoted CSV lines from a list of dicts with id/form_json/images/username."""
+def _build_csv_lines(rows, use_python_repr=False):
+    """Build properly-quoted CSV lines from a list of dicts.
+
+    Args:
+        rows: List of dicts with id/form_json/images/username.
+        use_python_repr: If True, serialize with repr() (single quotes) to match
+            the actual Connect production API format. If False, use json.dumps.
+    """
     lines = [_build_csv_line(CSV_COLUMNS)]
+    serialize = repr if use_python_repr else json.dumps
     for row in rows:
         fields = [
             row.get("id", ""),
-            json.dumps(row.get("form_json", {})),
-            json.dumps(row.get("images", [])),
+            serialize(row.get("form_json", {})),
+            serialize(row.get("images", [])),
             row.get("username", "user1"),
         ]
         lines.append(_build_csv_line(fields))
@@ -152,6 +159,29 @@ def test_image_types_no_images_column(labs_client):
 
     assert response.status_code == 200
     assert response.json() == []
+
+
+@override_settings(**LABS_SETTINGS)
+def test_image_types_python_repr_format(labs_client):
+    """CSV from Connect uses Python repr (single quotes), not JSON. View must handle both."""
+    rows = [
+        {
+            "id": 1,
+            "form_json": {"form": {"group": {"photo_a": "img1.jpg"}}},
+            "images": [{"blob_id": "b1", "name": "img1.jpg", "parent_id": "xf1"}],
+            "username": "user1",
+        },
+    ]
+    lines = _build_csv_lines(rows, use_python_repr=True)
+    mock_cm = _mock_stream_context(lines)
+
+    with patch("commcare_connect.audit.views.httpx.stream", return_value=mock_cm):
+        response = labs_client.get("/audit/api/opportunity/42/image-questions/")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["id"] == "group/photo_a"
 
 
 @override_settings(**LABS_SETTINGS)

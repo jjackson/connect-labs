@@ -1786,6 +1786,22 @@ class OpportunityImageTypesAPIView(LoginRequiredMixin, View):
     MAX_ROWS = 200
     STABLE_THRESHOLD = 50
 
+    @staticmethod
+    def _parse_python_literal(raw: str):
+        """Parse a CSV field that may be Python repr or JSON."""
+        import ast
+
+        if not raw:
+            return None
+        try:
+            return json.loads(raw)
+        except (json.JSONDecodeError, ValueError):
+            pass
+        try:
+            return ast.literal_eval(raw)
+        except (ValueError, SyntaxError):
+            return None
+
     def get(self, request, opp_id: int):
         import csv
         import io
@@ -1836,20 +1852,15 @@ class OpportunityImageTypesAPIView(LoginRequiredMixin, View):
                     if not images_raw or images_raw == "[]":
                         continue
 
-                    try:
-                        images = json.loads(images_raw)
-                    except (json.JSONDecodeError, ValueError):
-                        continue
-
-                    if not images:
+                    images = self._parse_python_literal(images_raw)
+                    if not images or not isinstance(images, list):
                         continue
 
                     form_json_raw = (
                         row[form_json_idx] if form_json_idx is not None and form_json_idx < len(row) else ""
                     )
-                    try:
-                        form_json = json.loads(form_json_raw) if form_json_raw else {}
-                    except (json.JSONDecodeError, ValueError):
+                    form_json = self._parse_python_literal(form_json_raw)
+                    if not isinstance(form_json, dict):
                         form_json = {}
 
                     visit_data = {"images": images, "form_json": form_json}
