@@ -16,6 +16,15 @@ logger = logging.getLogger(__name__)
 CONTEXT_PARAMS = ["organization_id", "program_id", "opportunity_id"]
 
 
+def get_org_data(request) -> dict:
+    """Get organization data from session.
+
+    Returns the organizations/programs/opportunities dict stored during OAuth login.
+    """
+    labs_oauth = getattr(request, "session", {}).get("labs_oauth", {}) if hasattr(request, "session") else {}
+    return labs_oauth.get("organization_data", {})
+
+
 def extract_context_from_url(request: HttpRequest) -> dict:
     """Extract context parameters from URL query string.
 
@@ -85,10 +94,10 @@ def validate_context_access(request: HttpRequest, context: dict) -> dict:
     Returns:
         Dict with validated context and full objects from OAuth data
     """
-    if not hasattr(request.user, "_org_data"):
+    org_data = get_org_data(request)
+    if not org_data:
         return {}
 
-    org_data = request.user._org_data
     validated = {}
 
     # Validate organization_id
@@ -196,10 +205,9 @@ def try_auto_select_context(request: HttpRequest) -> dict | None:
     Returns:
         Dict with auto-selected context, or None if can't auto-select
     """
-    if not hasattr(request.user, "_org_data"):
+    org_data = get_org_data(request)
+    if not org_data:
         return None
-
-    org_data = request.user._org_data
 
     organizations = org_data.get("organizations", [])
     programs = org_data.get("programs", [])

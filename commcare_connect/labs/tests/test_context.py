@@ -8,6 +8,7 @@ from commcare_connect.labs.context import (
     add_context_to_url,
     extract_context_from_url,
     get_context_url_params,
+    get_org_data,
     try_auto_select_context,
     validate_context_access,
 )
@@ -72,6 +73,7 @@ class TestContextValidation:
             "organization_data": {"opportunities": [{"id": 123, "name": "Test Opportunity"}]},
         }
         request.user = LabsUser(session_data)
+        request.session = {"labs_oauth": {"organization_data": session_data["organization_data"]}}
 
         context = {"opportunity_id": 123}
         validated = validate_context_access(request, context)
@@ -90,12 +92,15 @@ class TestContextValidation:
             "organization_data": {"opportunities": [{"id": 123, "name": "Test Opportunity"}]},
         }
         request.user = LabsUser(session_data)
+        request.session = {"labs_oauth": {"organization_data": session_data["organization_data"]}}
 
         context = {"opportunity_id": 999}
         validated = validate_context_access(request, context)
 
-        # Should not include opportunity_id since user doesn't have access
-        assert "opportunity_id" not in validated
+        # Unknown opportunity IDs are passed through for API-level validation
+        # (handles managed opps not in cached OAuth data)
+        assert validated["opportunity_id"] == 999
+        assert "opportunity" not in validated
 
 
 @pytest.mark.django_db
@@ -116,6 +121,7 @@ class TestAutoSelection:
             },
         }
         request.user = LabsUser(session_data)
+        request.session = {"labs_oauth": {"organization_data": session_data["organization_data"]}}
 
         result = try_auto_select_context(request)
 
@@ -136,6 +142,7 @@ class TestAutoSelection:
             },
         }
         request.user = LabsUser(session_data)
+        request.session = {"labs_oauth": {"organization_data": session_data["organization_data"]}}
 
         result = try_auto_select_context(request)
 
@@ -155,6 +162,7 @@ class TestAutoSelection:
             },
         }
         request.user = LabsUser(session_data)
+        request.session = {"labs_oauth": {"organization_data": session_data["organization_data"]}}
 
         result = try_auto_select_context(request)
 
