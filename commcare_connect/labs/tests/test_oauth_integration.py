@@ -42,13 +42,11 @@ def test_introspect_saved_token():
 
 
 def test_get_labs_user_like_real_script():
-    """Test creating LabsUser from saved token - the typical CLI pattern."""
+    """Test creating User from saved token - the typical CLI pattern."""
     # Exactly what a real script does
     user = get_labs_user_from_token()
 
-    assert user is not None, "Failed to create LabsUser. Check token and .env credentials"
+    assert user is not None, "Failed to create User. Check token and .env credentials"
     assert user.username
-    # Note: ID may be 0 (introspection doesn't always return user_id, but username is sufficient)
     assert user.is_authenticated is True
-    assert user.is_labs_user is True
-    print(f"\n[OK] Created LabsUser: {user.username}")
+    print(f"\n[OK] Created User: {user.username}")
