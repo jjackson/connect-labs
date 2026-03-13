@@ -18,14 +18,11 @@ LABS_MIDDLEWARE = [
     "django_htmx.middleware.HtmxMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "commcare_connect.labs.middleware.LabsAuthenticationMiddleware",
-    "commcare_connect.labs.middleware.LabsURLWhitelistMiddleware",
     "commcare_connect.labs.context.LabsContextMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "commcare_connect.utils.middleware.CustomErrorHandlingMiddleware",
     "commcare_connect.utils.middleware.CurrentVersionMiddleware",
-    "waffle.middleware.WaffleMiddleware",
     "commcare_connect.utils.middleware.CustomPGHistoryMiddleware",
 ]
 

@@ -76,8 +76,6 @@ if SENTRY_DSN:
 # CSRF
 # ------------------------------------------------------------------------------
 CSRF_TRUSTED_ORIGINS = ["https://*.127.0.0.1"] + env.list("CSRF_TRUSTED_ORIGINS", default=[])
-ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
-
 # LABS ENVIRONMENT
 # ------------------------------------------------------------------------------
 IS_LABS_ENVIRONMENT = True
@@ -85,28 +83,16 @@ DEPLOY_ENVIRONMENT = "labs"
 
 # OAuth configuration
 LABS_OAUTH_SCOPES = ["export"]
-ACCOUNT_ALLOW_REGISTRATION = False
 LOGIN_URL = "/labs/login/"
-
-# Custom authentication (session-based OAuth for users, Django auth for admin)
-AUTHENTICATION_BACKENDS = [
-    "django.contrib.auth.backends.ModelBackend",
-    "commcare_connect.labs.auth_backend.LabsOAuthBackend",
-]
 
 # Add labs app and custom_analysis
 INSTALLED_APPS.append("commcare_connect.labs")
 INSTALLED_APPS.append("commcare_connect.custom_analysis.chc_nutrition")
 
-# Replace default AuthenticationMiddleware with labs version
+# Add labs context middleware after auth
 MIDDLEWARE = list(MIDDLEWARE)
 _auth_idx = MIDDLEWARE.index("django.contrib.auth.middleware.AuthenticationMiddleware")
-MIDDLEWARE[_auth_idx] = "commcare_connect.labs.middleware.LabsAuthenticationMiddleware"
-
-SILENCED_SYSTEM_CHECKS = ["admin.E408"]
-MIDDLEWARE.remove("commcare_connect.users.middleware.OrganizationMiddleware")
-MIDDLEWARE.insert(_auth_idx + 1, "commcare_connect.labs.middleware.LabsURLWhitelistMiddleware")
-MIDDLEWARE.insert(_auth_idx + 2, "commcare_connect.labs.context.LabsContextMiddleware")
+MIDDLEWARE.insert(_auth_idx + 1, "commcare_connect.labs.context.LabsContextMiddleware")
 
 # CommCare OAuth configuration
 COMMCARE_HQ_URL = env("COMMCARE_HQ_URL", default="https://www.commcarehq.org")
