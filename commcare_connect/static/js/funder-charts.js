@@ -1087,7 +1087,7 @@ function renderMap(visits) {
   clusterGroup.addTo(map);
 
   if (bounds.length > 0) {
-    map.fitBounds(bounds, { padding: [30, 30], maxZoom: 12 });
+    map.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
   }
 
   // Fix Leaflet map rendering in hidden containers

@@ -134,12 +134,6 @@
 
         <!-- Charts Grid (hidden until data loads) -->
         <div id="charts-container" class="hidden">
-            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200 mb-6">
-                <h3 class="text-sm font-semibold text-gray-700 mb-3">
-                    <i class="fa-solid fa-map-location-dot mr-1"></i> Visit Locations
-                </h3>
-                <div id="visits-map" style="height: 500px; border-radius: 0.5rem;"></div>
-            </div>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
                     <canvas id="visits-chart" style="height: 300px;"></canvas>
@@ -147,6 +141,12 @@
                 <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
                     <canvas id="payments-chart" style="height: 300px;"></canvas>
                 </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">
+                    <i class="fa-solid fa-map-location-dot mr-1"></i> Visit Locations
+                </h3>
+                <div id="visits-map" style="height: 400px; border-radius: 0.5rem;"></div>
             </div>
         </div>
     </div>
