@@ -120,17 +120,29 @@ class FunderDashboardDataAccess:
         data["allocations"] = allocations
         return self.update_fund(fund_id, data)
 
-    def fetch_completed_works(self, opportunity_id: int) -> list[dict]:
-        """Fetch completed_works CSV from Connect API and parse to dicts."""
+    def _fetch_csv(self, url: str) -> list[dict]:
+        """Fetch a CSV endpoint from Connect API and parse to list of dicts."""
         import csv
         import io
 
         import httpx
-        from django.conf import settings
 
-        url = f"{settings.CONNECT_PRODUCTION_URL}/export/opportunity/{opportunity_id}/completed_works/"
-        with httpx.Client(timeout=60) as client:
+        with httpx.Client(timeout=120) as client:
             resp = client.get(url, headers={"Authorization": f"Bearer {self.access_token}"})
             resp.raise_for_status()
         reader = csv.DictReader(io.StringIO(resp.text))
         return list(reader)
+
+    def fetch_completed_works(self, opportunity_id: int) -> list[dict]:
+        """Fetch completed_works CSV from Connect API."""
+        from django.conf import settings
+
+        url = f"{settings.CONNECT_PRODUCTION_URL}/export/opportunity/{opportunity_id}/completed_works/"
+        return self._fetch_csv(url)
+
+    def fetch_user_visits(self, opportunity_id: int) -> list[dict]:
+        """Fetch user_visits CSV from Connect API."""
+        from django.conf import settings
+
+        url = f"{settings.CONNECT_PRODUCTION_URL}/export/opportunity/{opportunity_id}/user_visits/"
+        return self._fetch_csv(url)

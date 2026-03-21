@@ -9,14 +9,7 @@ from django.views.generic import TemplateView
 
 from commcare_connect.funder_dashboard.data_access import FunderDashboardDataAccess
 from commcare_connect.funder_dashboard.forms import FundForm
-from commcare_connect.labs.analysis.config import (
-    AnalysisPipelineConfig,
-    CacheStage,
-    DataSourceConfig,
-    FieldComputation,
-)
-from commcare_connect.labs.analysis.pipeline import AnalysisPipeline
-from commcare_connect.labs.analysis.sse_streaming import AnalysisPipelineSSEMixin, BaseSSEStreamView, send_sse_event
+from commcare_connect.labs.analysis.sse_streaming import BaseSSEStreamView, send_sse_event
 
 logger = logging.getLogger(__name__)
 
@@ -178,7 +171,6 @@ class FundPipelineDataView(BaseSSEStreamView):
     def stream_data(self, request) -> Generator[str, None, None]:
         """Stream pipeline data for each allocation with an opportunity_id."""
         pk = self.kwargs["pk"]
-        mixin = AnalysisPipelineSSEMixin()
 
         try:
             # Check OAuth token
@@ -203,9 +195,6 @@ class FundPipelineDataView(BaseSSEStreamView):
 
             yield send_sse_event(f"Processing {len(opp_allocations)} allocations...")
 
-            # Create pipeline once before the loop
-            pipeline = AnalysisPipeline(request)
-
             all_visits = []
             all_payments = []
 
@@ -215,71 +204,29 @@ class FundPipelineDataView(BaseSSEStreamView):
                 country = alloc.get("country", "")
                 delivery_type = alloc.get("delivery_type", "")
 
+                # Fetch user_visits CSV directly
                 yield send_sse_event(f"Loading visits for {opp_name}...")
-
-                # Build pipeline config for visit-level data
-                config = AnalysisPipelineConfig(
-                    grouping_key="username",
-                    terminal_stage=CacheStage.VISIT_LEVEL,
-                    data_source=DataSourceConfig(type="connect_csv"),
-                    experiment=f"funder_visits_{opp_id}",
-                    fields=[
-                        FieldComputation(name="visit_date", path="visit_date", aggregation="first"),
-                        FieldComputation(
-                            name="status",
-                            path="status",
-                            aggregation="first",
-                            transform=lambda v: str(v) if v else "",
-                        ),
-                        FieldComputation(
-                            name="location",
-                            path="location",
-                            aggregation="first",
-                            transform=lambda v: str(v) if v else "",
-                        ),
-                        FieldComputation(
-                            name="entity_name",
-                            path="entity_name",
-                            aggregation="first",
-                            transform=lambda v: str(v) if v else "",
-                        ),
-                    ],
-                )
-
-                # Execute pipeline with streaming
                 try:
-                    pipeline_stream = pipeline.stream_analysis(config, opportunity_id=opp_id)
-                    yield from mixin.stream_pipeline_events(pipeline_stream)
-
-                    result = mixin._pipeline_result
-                    if result:
-
-                        def format_date(d):
-                            if d and hasattr(d, "isoformat"):
-                                return d.isoformat()
-                            return d
-
-                        opp_visits = []
-                        for row in result.rows:
-                            computed = getattr(row, "computed", {}) or {}
-                            opp_visits.append(
-                                {
-                                    "visit_date": format_date(row.visit_date),
-                                    "username": row.username,
-                                    "entity_name": row.entity_name or computed.get("entity_name", ""),
-                                    "status": row.status or computed.get("status", ""),
-                                    "location": computed.get("location", ""),
-                                    "opp_id": opp_id,
-                                    "opp_name": opp_name,
-                                    "country": country,
-                                    "delivery_type": delivery_type,
-                                }
-                            )
-                        all_visits.extend(opp_visits)
-
-                        yield send_sse_event(f"Got {len(opp_visits)} visits for {opp_name}")
+                    visits_csv = da.fetch_user_visits(opp_id)
+                    opp_visits = []
+                    for v in visits_csv:
+                        opp_visits.append(
+                            {
+                                "visit_date": v.get("visit_date", ""),
+                                "username": v.get("username", ""),
+                                "entity_name": v.get("entity_name", ""),
+                                "status": v.get("status", ""),
+                                "location": v.get("location", ""),
+                                "opp_id": opp_id,
+                                "opp_name": opp_name,
+                                "country": country,
+                                "delivery_type": delivery_type,
+                            }
+                        )
+                    all_visits.extend(opp_visits)
+                    yield send_sse_event(f"Got {len(opp_visits)} visits for {opp_name}")
                 except Exception as e:
-                    logger.warning("Pipeline failed for opp %s: %s", opp_id, e)
+                    logger.warning("Failed to load visits for opp %s: %s", opp_id, e)
                     yield send_sse_event(f"Skipping visits for {opp_name}: {e}")
 
                 # Fetch completed_works CSV for payment data
@@ -296,8 +243,8 @@ class FundPipelineDataView(BaseSSEStreamView):
                             {
                                 "status_modified_date": w.get("status_modified_date", ""),
                                 "payment_date": w.get("payment_date", ""),
-                                "usd_flw": float(w.get("payment_accrued", 0) or 0),
-                                "usd_org": float(w.get("org_pay", 0) or 0),
+                                "usd_flw": float(w.get("saved_payment_accrued_usd", 0) or 0),
+                                "usd_org": float(w.get("saved_org_payment_accrued_usd", 0) or 0),
                                 "opp_id": opp_id,
                                 "opp_name": opp_name,
                                 "country": country,

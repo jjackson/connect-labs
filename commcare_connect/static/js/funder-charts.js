@@ -435,7 +435,8 @@ function renderImpactHeadline(visits, payments, container) {
   var rangeStr = '';
   if (dates.length > 0) {
     var fmtDate = function (ds) {
-      var d = new Date(ds + 'T00:00:00');
+      var d = new Date(ds);
+      if (isNaN(d.getTime())) d = new Date(ds.substring(0, 10) + 'T00:00:00');
       return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
     };
     rangeStr =
