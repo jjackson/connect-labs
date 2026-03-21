@@ -106,6 +106,9 @@
             Activity &amp; Payments
         </h2>
 
+        <!-- Recent Activity Banner (hidden until data loads) -->
+        <div id="recent-activity" class="hidden"></div>
+
         <!-- Impact Headline (hidden until data loads) -->
         <div id="impact-headline" class="hidden"></div>
 
@@ -126,8 +129,17 @@
         <!-- Performance Table (hidden until data loads) -->
         <div id="performance-table" class="hidden"></div>
 
+        <!-- Alerts Section (hidden until data loads) -->
+        <div id="alerts-section" class="hidden"></div>
+
         <!-- Charts Grid (hidden until data loads) -->
         <div id="charts-container" class="hidden">
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200 mb-6">
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">
+                    <i class="fa-solid fa-map-location-dot mr-1"></i> Visit Locations
+                </h3>
+                <div id="visits-map" style="height: 500px; border-radius: 0.5rem;"></div>
+            </div>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
                     <canvas id="visits-chart" style="height: 300px;"></canvas>
@@ -135,12 +147,6 @@
                 <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
                     <canvas id="payments-chart" style="height: 300px;"></canvas>
                 </div>
-            </div>
-            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-                <h3 class="text-sm font-semibold text-gray-700 mb-3">
-                    <i class="fa-solid fa-map-location-dot mr-1"></i> Visit Locations
-                </h3>
-                <div id="visits-map" style="height: 400px; border-radius: 0.5rem;"></div>
             </div>
         </div>
     </div>
@@ -164,6 +170,8 @@
         var container = document.getElementById('charts-container');
         var impactHeadline = document.getElementById('impact-headline');
         var perfTable = document.getElementById('performance-table');
+        var recentActivity = document.getElementById('recent-activity');
+        var alertsSection = document.getElementById('alerts-section');
 
         // Build SSE URL with current query string (for cache-busting etc.)
         var sseUrl = '{% url "funder_dashboard:fund_pipeline_data" pk=fund.pk %}' + window.location.search;
@@ -200,12 +208,17 @@
                 var visits = (data.data && data.data.visits) || [];
                 var payments = (data.data && data.data.payments) || [];
 
+                renderRecentActivity(visits, payments, recentActivity);
+                recentActivity.classList.remove('hidden');
                 renderImpactHeadline(visits, payments, impactHeadline);
                 renderKPIs(visits, payments, kpis);
                 renderPerformanceTable(visits, payments, perfTable);
+                renderAlerts(visits, payments, alertsSection);
+                alertsSection.classList.remove('hidden');
                 renderVisitsChart(visits);
                 renderPaymentsChart(payments);
                 renderMap(visits);
+                animateCounters();
 
             } catch (e) {
                 console.error('[FundCharts] Failed to parse SSE event:', e);
