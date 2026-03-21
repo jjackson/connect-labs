@@ -90,108 +90,6 @@
         </div>
     </div>
 
-    <!-- Allocations -->
-    <div class="bg-white rounded-xl shadow-sm p-8 mb-6">
-        <h2 class="text-lg font-semibold text-brand-deep-purple mb-4">
-            <i class="fa-solid fa-file-invoice-dollar mr-2"></i>
-            Allocations
-        </h2>
-        {% if fund.allocations %}
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead>
-                        <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Opportunity / Recipient</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Country</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        {% for alloc in fund.allocations %}
-                        <tr>
-                            <td class="px-4 py-3 text-sm text-gray-900">
-                                <div class="font-medium">{% firstof alloc.opportunity_name alloc.program_name alloc.org_name "—" %}</div>
-                                {% if alloc.llo_name %}
-                                    <div class="text-xs text-gray-500">{{ alloc.llo_name }}</div>
-                                {% endif %}
-                                {% if alloc.opportunity_id %}
-                                    <span class="text-xs text-gray-400">#{{ alloc.opportunity_id }}</span>
-                                {% endif %}
-                            </td>
-                            <td class="px-4 py-3 text-sm font-medium text-gray-900">
-                                {{ alloc.amount|intcomma }}
-                                {% if alloc.currency %}<span class="text-xs text-gray-400 ml-1">{{ alloc.currency }}</span>{% endif %}
-                            </td>
-                            <td class="px-4 py-3 text-sm text-gray-500">{{ alloc.country|default:"—" }}</td>
-                            <td class="px-4 py-3 text-sm">
-                                {% if alloc.type == 'award' %}
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Award</span>
-                                {% elif alloc.type == 'opportunity' %}
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">{{ alloc.delivery_type|default:"Opp" }}</span>
-                                {% elif alloc.type == 'retroactive' %}
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">Retroactive</span>
-                                {% else %}
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">Manual</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% else %}
-            <div class="text-center py-6">
-                <i class="fa-solid fa-file-invoice text-3xl text-gray-300 mb-2"></i>
-                <p class="text-sm text-gray-500">No allocations yet. Edit this fund to add allocations.</p>
-            </div>
-        {% endif %}
-    </div>
-
-    <!-- Programs -->
-    <div class="bg-white rounded-xl shadow-sm p-8 mb-6">
-        <h2 class="text-lg font-semibold text-brand-deep-purple mb-4">
-            <i class="fa-solid fa-diagram-project mr-2"></i>
-            Linked Programs
-        </h2>
-        {% if fund.program_ids %}
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {% for pid in fund.program_ids %}
-                    <div class="flex items-center gap-3 bg-gray-50 rounded-lg p-3 border border-gray-200">
-                        <div class="w-8 h-8 bg-indigo-100 rounded flex items-center justify-center">
-                            <i class="fa-solid fa-folder text-indigo-500 text-sm"></i>
-                        </div>
-                        <div>
-                            <div class="text-sm font-medium text-gray-900">Program #{{ pid }}</div>
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <div class="text-center py-6">
-                <i class="fa-solid fa-link text-3xl text-gray-300 mb-2"></i>
-                <p class="text-sm text-gray-500">No programs linked to this fund yet.</p>
-            </div>
-        {% endif %}
-    </div>
-
-    <!-- Delivery Types -->
-    {% if fund.delivery_types %}
-    <div class="bg-white rounded-xl shadow-sm p-8">
-        <h2 class="text-lg font-semibold text-brand-deep-purple mb-4">
-            <i class="fa-solid fa-truck-medical mr-2"></i>
-            Delivery Types
-        </h2>
-        <div class="flex flex-wrap gap-2">
-            {% for dt in fund.delivery_types %}
-                <span class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-                    {{ dt }}
-                </span>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-
     <!-- CDN: Chart.js, Leaflet, MarkerCluster -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
@@ -208,6 +106,9 @@
             Activity &amp; Payments
         </h2>
 
+        <!-- Impact Headline (hidden until data loads) -->
+        <div id="impact-headline" class="hidden"></div>
+
         <!-- Loading State -->
         <div id="charts-loading" class="bg-white rounded-xl shadow-sm p-8 mb-6 text-center">
             <div class="inline-flex items-center gap-3">
@@ -221,6 +122,9 @@
 
         <!-- KPI Cards (hidden until data loads) -->
         <div id="charts-kpis" class="hidden"></div>
+
+        <!-- Performance Table (hidden until data loads) -->
+        <div id="performance-table" class="hidden"></div>
 
         <!-- Charts Grid (hidden until data loads) -->
         <div id="charts-container" class="hidden">
@@ -244,6 +148,13 @@
     <!-- Chart rendering library -->
     <script src="{% static 'js/funder-charts.js' %}"></script>
 
+    <!-- Fund data for JS -->
+    {{ fund.allocations|json_script:"fund-allocations-data" }}
+    <script>
+    var fundTotalBudget = {{ fund.total_budget|default:"null" }};
+    var fundAllocations = JSON.parse(document.getElementById('fund-allocations-data').textContent);
+    </script>
+
     <!-- SSE Client -->
     <script>
     (function() {
@@ -251,6 +162,8 @@
         var status = document.getElementById('charts-status');
         var kpis = document.getElementById('charts-kpis');
         var container = document.getElementById('charts-container');
+        var impactHeadline = document.getElementById('impact-headline');
+        var perfTable = document.getElementById('performance-table');
 
         // Build SSE URL with current query string (for cache-busting etc.)
         var sseUrl = '{% url "funder_dashboard:fund_pipeline_data" pk=fund.pk %}' + window.location.search;
@@ -280,11 +193,16 @@
                 loading.classList.add('hidden');
                 kpis.classList.remove('hidden');
                 container.classList.remove('hidden');
+                impactHeadline.classList.remove('hidden');
+                perfTable.classList.remove('hidden');
 
+                // View sends flat arrays with opp metadata on each row
                 var visits = (data.data && data.data.visits) || [];
                 var payments = (data.data && data.data.payments) || [];
 
+                renderImpactHeadline(visits, payments, impactHeadline);
                 renderKPIs(visits, payments, kpis);
+                renderPerformanceTable(visits, payments, perfTable);
                 renderVisitsChart(visits);
                 renderPaymentsChart(payments);
                 renderMap(visits);
