@@ -42,11 +42,15 @@
 
     {% if responses %}
         <!-- AI Review Section -->
+        <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
             <div class="p-4 flex items-center justify-between border-b border-gray-100">
-                <span class="text-sm font-semibold text-gray-700">
-                    <i class="fa-solid fa-robot mr-2 text-indigo-500"></i> AI Comparative Review
-                </span>
+                <div>
+                    <span class="text-sm font-semibold text-gray-700">
+                        <i class="fa-solid fa-robot mr-2 text-indigo-500"></i> AI Comparative Review
+                    </span>
+                    <span class="text-xs text-gray-500 ml-2">Compare all applicants side by side</span>
+                </div>
                 <button id="ai-review-btn"
                         class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
                     <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> AI Review All ({{ responses|length }} responses)
@@ -112,15 +116,9 @@
                                     var evt = JSON.parse(line.slice(6));
                                     if (evt.event_type === 'delta' && evt.message) {
                                         fullText += evt.message;
-                                        var html = fullText
-                                            .replace(/### (.*)/g, '<h3 class="text-base font-semibold mt-4 mb-2">$1</h3>')
-                                            .replace(/## (.*)/g, '<h2 class="text-lg font-semibold mt-4 mb-2">$1</h2>')
-                                            .replace(/# (.*)/g, '<h1 class="text-xl font-bold mt-4 mb-2">$1</h1>')
-                                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                            .replace(/^\- (.*)/gm, '<li class="ml-4">$1</li>')
-                                            .replace(/\n\n/g, '</p><p class="mb-2">')
-                                            .replace(/\n/g, '<br>');
-                                        textEl.innerHTML = '<p class="mb-2">' + html + '</p>';
+                                        textEl.innerHTML = (typeof marked !== 'undefined')
+                                            ? marked.parse(fullText)
+                                            : fullText.replace(/\n/g, '<br>');
                                     }
                                     if (evt.event_type === 'error') {
                                         textEl.innerHTML = '<p class="text-red-600">' + (evt.error || 'Review failed') + '</p>';

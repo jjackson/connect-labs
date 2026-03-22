@@ -95,7 +95,8 @@
         </div>
     </div>
 
-    <!-- CDN: Chart.js, Leaflet, MarkerCluster -->
+    <!-- CDN: Chart.js, Leaflet, MarkerCluster, Marked (markdown) -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
@@ -114,21 +115,19 @@
         <!-- Filter Controls (hidden until data loads) -->
         <div id="filter-controls" class="hidden mb-4">
             <div class="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
-                <div class="flex flex-wrap items-center gap-3">
-                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        <i class="fa-solid fa-filter mr-1"></i> Filters
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider mr-1">
+                        <i class="fa-solid fa-filter mr-1"></i> Filter
                     </span>
-                    <select id="filter-delivery-type" multiple class="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" title="Delivery Type">
-                    </select>
-                    <select id="filter-country" multiple class="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" title="Country">
-                    </select>
-                    <input type="date" id="filter-date-from" class="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="From" title="Date from">
-                    <input type="date" id="filter-date-to" class="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="To" title="Date to">
-                    <button id="apply-filters-btn" class="px-3 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition">
-                        Apply
-                    </button>
-                    <button id="clear-filters-btn" class="hidden px-3 py-1.5 bg-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-300 transition">
-                        <i class="fa-solid fa-times mr-1"></i> Clear
+                    <div id="filter-pills-delivery" class="flex flex-wrap gap-1.5"></div>
+                    <div id="filter-pills-country" class="flex flex-wrap gap-1.5"></div>
+                    <div class="flex items-center gap-1.5 ml-1">
+                        <input type="date" id="filter-date-from" class="text-xs border border-gray-300 rounded-lg px-2 py-1 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 w-28" placeholder="From" title="From date">
+                        <span class="text-xs text-gray-400">to</span>
+                        <input type="date" id="filter-date-to" class="text-xs border border-gray-300 rounded-lg px-2 py-1 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 w-28" placeholder="To" title="To date">
+                    </div>
+                    <button id="clear-filters-btn" class="hidden px-2.5 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full hover:bg-gray-200 transition ml-1">
+                        <i class="fa-solid fa-times mr-1"></i> Clear all
                     </button>
                     <span id="filter-status" class="text-xs text-gray-400 ml-auto"></span>
                 </div>
@@ -304,46 +303,40 @@
             }
         }
 
-        /** Initialize filter controls with available options. */
+        /** Initialize filter controls with pill toggle buttons. */
         function initFilters(visits, payments) {
             _allVisits = visits;
             _allPayments = payments;
             _filterBus = initFilterBus(visits, payments, renderAll);
 
             var available = _filterBus.getAvailableFilters();
+            var selectedDT = {};
+            var selectedCountry = {};
 
-            // Populate delivery type dropdown
-            var dtSelect = document.getElementById('filter-delivery-type');
-            dtSelect.innerHTML = '';
-            for (var i = 0; i < available.deliveryTypes.length; i++) {
-                var opt = document.createElement('option');
-                opt.value = available.deliveryTypes[i];
-                opt.textContent = available.deliveryTypes[i];
-                dtSelect.appendChild(opt);
-            }
-            // Hide if only 0-1 options
-            dtSelect.style.display = available.deliveryTypes.length <= 1 ? 'none' : '';
-
-            // Populate country dropdown
-            var cSelect = document.getElementById('filter-country');
-            cSelect.innerHTML = '';
-            for (var i = 0; i < available.countries.length; i++) {
-                var opt = document.createElement('option');
-                opt.value = available.countries[i];
-                opt.textContent = available.countries[i];
-                cSelect.appendChild(opt);
-            }
-            cSelect.style.display = available.countries.length <= 1 ? 'none' : '';
-
-            // Only show filter bar if there's something to filter
-            if (available.deliveryTypes.length > 1 || available.countries.length > 1) {
-                filterControls.classList.remove('hidden');
+            function makePill(value, label, selectedMap, filterKey) {
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.textContent = label;
+                btn.className = 'px-2.5 py-1 text-xs font-medium rounded-full border transition cursor-pointer ' +
+                    'border-gray-300 text-gray-600 bg-white hover:bg-gray-50';
+                btn.onclick = function() {
+                    if (selectedMap[value]) {
+                        delete selectedMap[value];
+                        btn.className = 'px-2.5 py-1 text-xs font-medium rounded-full border transition cursor-pointer ' +
+                            'border-gray-300 text-gray-600 bg-white hover:bg-gray-50';
+                    } else {
+                        selectedMap[value] = true;
+                        btn.className = 'px-2.5 py-1 text-xs font-medium rounded-full border transition cursor-pointer ' +
+                            'border-indigo-500 text-indigo-700 bg-indigo-50';
+                    }
+                    applyCurrentFilters();
+                };
+                return btn;
             }
 
-            // Apply button
-            document.getElementById('apply-filters-btn').onclick = function() {
-                var dtValues = Array.from(dtSelect.selectedOptions).map(function(o) { return o.value; });
-                var cValues = Array.from(cSelect.selectedOptions).map(function(o) { return o.value; });
+            function applyCurrentFilters() {
+                var dtValues = Object.keys(selectedDT);
+                var cValues = Object.keys(selectedCountry);
                 var dateFrom = document.getElementById('filter-date-from').value || null;
                 var dateTo = document.getElementById('filter-date-to').value || null;
                 _filterBus.applyFilters({
@@ -352,14 +345,48 @@
                     dateFrom: dateFrom,
                     dateTo: dateTo,
                 });
-            };
+            }
+
+            // Populate delivery type pills
+            var dtContainer = document.getElementById('filter-pills-delivery');
+            if (available.deliveryTypes.length > 1) {
+                for (var i = 0; i < available.deliveryTypes.length; i++) {
+                    dtContainer.appendChild(makePill(
+                        available.deliveryTypes[i], available.deliveryTypes[i], selectedDT, 'deliveryTypes'));
+                }
+            }
+
+            // Populate country pills
+            var cContainer = document.getElementById('filter-pills-country');
+            if (available.countries.length > 1) {
+                for (var i = 0; i < available.countries.length; i++) {
+                    cContainer.appendChild(makePill(
+                        available.countries[i], available.countries[i], selectedCountry, 'countries'));
+                }
+            }
+
+            // Only show filter bar if there's something to filter
+            if (available.deliveryTypes.length > 1 || available.countries.length > 1) {
+                filterControls.classList.remove('hidden');
+            }
+
+            // Date inputs apply on change (instant, no Apply button needed)
+            document.getElementById('filter-date-from').onchange = applyCurrentFilters;
+            document.getElementById('filter-date-to').onchange = applyCurrentFilters;
 
             // Clear button
             document.getElementById('clear-filters-btn').onclick = function() {
-                dtSelect.selectedIndex = -1;
-                cSelect.selectedIndex = -1;
+                selectedDT = {};
+                selectedCountry = {};
                 document.getElementById('filter-date-from').value = '';
                 document.getElementById('filter-date-to').value = '';
+                // Reset all pills to unselected
+                var pills = filterControls.querySelectorAll('button[type="button"]');
+                pills.forEach(function(p) {
+                    if (p.id === 'clear-filters-btn') return;
+                    p.className = 'px-2.5 py-1 text-xs font-medium rounded-full border transition cursor-pointer ' +
+                        'border-gray-300 text-gray-600 bg-white hover:bg-gray-50';
+                });
                 _filterBus.clearFilters();
             };
         }
@@ -380,6 +407,32 @@
                 // Aggregate data for AI
                 var summary = aggregateForReport(_allVisits, _allPayments, fundAllocations, fundTotalBudget);
 
+                // Build a human-readable prompt (not just a JSON dump)
+                var prompt = 'Write an impact report for the fund "' + '{{ fund.name|escapejs }}' + '".\n';
+                {% if fund.description %}prompt += 'Fund description: {{ fund.description|escapejs }}\n';{% endif %}
+                prompt += '\nKey metrics:\n';
+                prompt += '- Total approved visits: ' + summary.total_visits.toLocaleString() + '\n';
+                prompt += '- Total USD distributed: $' + summary.total_usd_distributed.toLocaleString() + '\n';
+                if (summary.total_budget) {
+                    prompt += '- Total budget: $' + summary.total_budget.toLocaleString() + '\n';
+                    prompt += '- Budget utilization: ' + summary.budget_utilization_pct + '%\n';
+                }
+                prompt += '- Families/beneficiaries reached: ' + summary.families_reached.toLocaleString() + '\n';
+                prompt += '- Countries: ' + summary.countries.join(', ') + '\n';
+                prompt += '\nGrantee performance:\n';
+                for (var g = 0; g < summary.opportunity_summaries.length; g++) {
+                    var opp = summary.opportunity_summaries[g];
+                    prompt += '- ' + opp.opp_name + ' (' + opp.country + ', ' + opp.delivery_type + '): ';
+                    prompt += opp.visit_count + ' visits, $' + opp.payment_total_usd.toLocaleString() + ' distributed, ';
+                    prompt += opp.flw_count + ' health workers, $' + opp.cost_per_visit + '/visit\n';
+                }
+                if (summary.weekly_spend.length > 0) {
+                    prompt += '\nRecent weekly delivery pace (last ' + summary.weekly_spend.length + ' weeks):\n';
+                    for (var w = 0; w < summary.weekly_spend.length; w++) {
+                        prompt += '- Week of ' + summary.weekly_spend[w].week + ': $' + summary.weekly_spend[w].usd.toLocaleString() + '\n';
+                    }
+                }
+
                 // POST to AI stream endpoint
                 fetch('{% url "ai:ai_stream" %}', {
                     method: 'POST',
@@ -389,7 +442,7 @@
                     },
                     body: JSON.stringify({
                         agent: 'fund_report',
-                        prompt: 'Generate a comprehensive impact report for this fund. Here is the aggregated data:\n\n' + JSON.stringify(summary, null, 2),
+                        prompt: prompt,
                         fund_name: '{{ fund.name|escapejs }}',
                         fund_description: '{{ fund.description|escapejs }}',
                     }),
@@ -419,16 +472,9 @@
                                     var evt = JSON.parse(line.slice(6));
                                     if (evt.event_type === 'delta' && evt.message) {
                                         fullText += evt.message;
-                                        // Simple markdown-to-HTML: bold, headers, bullets
-                                        var html = fullText
-                                            .replace(/### (.*)/g, '<h3 class="text-base font-semibold mt-4 mb-2">$1</h3>')
-                                            .replace(/## (.*)/g, '<h2 class="text-lg font-semibold mt-4 mb-2">$1</h2>')
-                                            .replace(/# (.*)/g, '<h1 class="text-xl font-bold mt-4 mb-2">$1</h1>')
-                                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                            .replace(/^\- (.*)/gm, '<li class="ml-4">$1</li>')
-                                            .replace(/\n\n/g, '</p><p class="mb-2">')
-                                            .replace(/\n/g, '<br>');
-                                        textEl.innerHTML = '<p class="mb-2">' + html + '</p>';
+                                        textEl.innerHTML = (typeof marked !== 'undefined')
+                                            ? marked.parse(fullText)
+                                            : fullText.replace(/\n/g, '<br>');
                                     }
                                     if (evt.event_type === 'error') {
                                         textEl.innerHTML = '<p class="text-red-600">' + (evt.error || 'Report generation failed') + '</p>';
@@ -513,12 +559,36 @@
     <!-- Print styles -->
     <style>
     @media print {
-        nav, .no-print, button, [id="filter-controls"] { display: none !important; }
+        /* Hide interactive elements */
+        nav, .no-print, button, [id="filter-controls"],
+        [id="ai-report-loading"], [id="charts-loading"],
+        #generate-report-btn, .fa-edit { display: none !important; }
+
+        /* Clean layout */
         .shadow-sm { box-shadow: none !important; }
-        body { background: white !important; }
-        .max-w-screen-xl { max-width: 100% !important; padding: 0 !important; }
-        #ai-report-content { break-inside: avoid; }
-        canvas { max-width: 100% !important; }
+        body { background: white !important; font-size: 11pt; }
+        .max-w-screen-xl { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
+
+        /* Page setup */
+        @page { margin: 1.5cm; size: A4; }
+
+        /* Avoid breaking charts across pages */
+        #ai-report-content, .rounded-xl { break-inside: avoid; }
+        canvas, img { max-width: 100% !important; break-inside: avoid; }
+
+        /* Show AI report in print if generated */
+        #ai-report-content { display: block !important; }
+
+        /* Add a header for the printed page */
+        .bg-white.rounded-xl.shadow-sm.p-8.mb-6:first-child::after {
+            content: "Impact Report — Printed {{ "now"|date:"M d, Y" }}";
+            display: block;
+            font-size: 9pt;
+            color: #666;
+            margin-top: 8px;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 4px;
+        }
     }
     </style>
 
