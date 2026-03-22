@@ -102,6 +102,48 @@
                 </div>
             {% endif %}
 
+            <!-- AI Coach Panel -->
+            <div class="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200 overflow-hidden">
+                <button type="button" id="coach-toggle"
+                        class="w-full p-4 flex items-center justify-between text-left"
+                        onclick="document.getElementById('coach-panel').classList.toggle('hidden'); this.querySelector('.fa-chevron-down').classList.toggle('rotate-180');">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+                            <i class="fa-solid fa-robot text-indigo-600"></i>
+                        </div>
+                        <div>
+                            <div class="text-sm font-semibold text-indigo-900">AI Application Coach</div>
+                            <div class="text-xs text-indigo-600">Get feedback on your draft answers before submitting</div>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-down text-indigo-400 transition-transform"></i>
+                </button>
+                <div id="coach-panel" class="hidden border-t border-indigo-200">
+                    <div class="p-4">
+                        <p class="text-xs text-indigo-700 mb-3">
+                            The AI coach will review your draft answers and suggest improvements based on the evaluation criteria.
+                            Your answers are not submitted or changed — this is advisory only.
+                        </p>
+                        <button type="button" id="coach-btn"
+                                class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Get Feedback
+                        </button>
+                    </div>
+                    <div id="coach-loading" class="hidden p-4 text-center">
+                        <div class="inline-flex items-center gap-3">
+                            <svg class="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                            <span class="text-sm text-indigo-600">Coach is reviewing your answers...</span>
+                        </div>
+                    </div>
+                    <div id="coach-content" class="hidden p-4 bg-white">
+                        <div id="coach-text" class="prose prose-sm max-w-none text-gray-700"></div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Form Actions -->
             <div class="flex justify-end gap-4 pt-2 pb-8">
                 <a href="{% url 'solicitations:public_detail' pk=solicitation.pk %}"
@@ -121,6 +163,106 @@
                 </button>
             </div>
         </form>
+
+        <script>
+        (function() {
+            var btn = document.getElementById('coach-btn');
+            if (!btn) return;
+            var loadingEl = document.getElementById('coach-loading');
+            var contentEl = document.getElementById('coach-content');
+            var textEl = document.getElementById('coach-text');
+
+            btn.onclick = function() {
+                btn.disabled = true;
+                loadingEl.classList.remove('hidden');
+                contentEl.classList.add('hidden');
+                textEl.innerHTML = '';
+
+                // Collect draft answers from form
+                var form = document.querySelector('form');
+                var formData = new FormData(form);
+                var answers = {};
+                for (var pair of formData.entries()) {
+                    if (pair[0].startsWith('question_') || pair[0].startsWith('q_')) {
+                        answers[pair[0]] = pair[1];
+                    }
+                }
+
+                // Also collect textarea values by label
+                var textareas = form.querySelectorAll('textarea, input[type="text"]');
+                textareas.forEach(function(el) {
+                    if (el.name && el.value) answers[el.name] = el.value;
+                });
+
+                var prompt = 'Please review my draft application for this solicitation.\n\n';
+                prompt += 'Solicitation: {{ solicitation.title|escapejs }}\n';
+                prompt += 'Description: {{ solicitation.description|escapejs|truncatewords:100 }}\n\n';
+                prompt += 'My draft answers:\n';
+                for (var key in answers) {
+                    if (answers[key]) prompt += key + ': ' + answers[key] + '\n';
+                }
+
+                fetch('{% url "ai:ai_stream" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}',
+                    },
+                    body: JSON.stringify({
+                        agent: 'application_coach',
+                        prompt: prompt,
+                    }),
+                }).then(function(response) {
+                    var reader = response.body.getReader();
+                    var decoder = new TextDecoder();
+                    var buffer = '';
+                    var fullText = '';
+
+                    loadingEl.classList.add('hidden');
+                    contentEl.classList.remove('hidden');
+
+                    function read() {
+                        reader.read().then(function(result) {
+                            if (result.done) { btn.disabled = false; return; }
+                            buffer += decoder.decode(result.value, { stream: true });
+                            var lines = buffer.split('\n');
+                            buffer = lines.pop();
+                            for (var i = 0; i < lines.length; i++) {
+                                var line = lines[i].trim();
+                                if (!line.startsWith('data: ')) continue;
+                                try {
+                                    var evt = JSON.parse(line.slice(6));
+                                    if (evt.event_type === 'delta' && evt.message) {
+                                        fullText += evt.message;
+                                        var html = fullText
+                                            .replace(/### (.*)/g, '<h3 class="text-base font-semibold mt-4 mb-2">$1</h3>')
+                                            .replace(/## (.*)/g, '<h2 class="text-lg font-semibold mt-4 mb-2">$1</h2>')
+                                            .replace(/# (.*)/g, '<h1 class="text-xl font-bold mt-4 mb-2">$1</h1>')
+                                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                            .replace(/^\- (.*)/gm, '<li class="ml-4">$1</li>')
+                                            .replace(/\n\n/g, '</p><p class="mb-2">')
+                                            .replace(/\n/g, '<br>');
+                                        textEl.innerHTML = '<p class="mb-2">' + html + '</p>';
+                                    }
+                                    if (evt.event_type === 'error') {
+                                        textEl.innerHTML = '<p class="text-red-600">' + (evt.error || 'Coach failed') + '</p>';
+                                        btn.disabled = false;
+                                    }
+                                } catch(e) {}
+                            }
+                            read();
+                        });
+                    }
+                    read();
+                }).catch(function(err) {
+                    loadingEl.classList.add('hidden');
+                    contentEl.classList.remove('hidden');
+                    textEl.innerHTML = '<p class="text-red-600">Failed: ' + err.message + '</p>';
+                    btn.disabled = false;
+                });
+            };
+        })();
+        </script>
 
     {% endif %}
 
