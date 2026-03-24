@@ -1,6 +1,7 @@
 import os
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponseRedirect
 from django.views.decorators.http import require_http_methods
@@ -10,6 +11,7 @@ from commcare_connect.labs.context import clear_context_from_session
 from commcare_connect.labs.integrations.connect.oauth import fetch_user_organization_data
 
 
+@login_required
 @require_http_methods(["POST"])
 def clear_context(request):
     """Clear the labs context from session and redirect back."""

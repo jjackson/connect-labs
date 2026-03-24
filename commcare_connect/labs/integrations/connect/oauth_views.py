@@ -20,6 +20,7 @@ from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from commcare_connect.labs.integrations.connect.oauth import fetch_user_organization_data, introspect_token
 from commcare_connect.users.models import User
@@ -246,6 +247,9 @@ def labs_oauth_callback(request: HttpRequest) -> HttpResponse:
     # Use first name if available, otherwise username
     display_name = profile_data.get("first_name") or username
     messages.success(request, f"Welcome, {display_name}!")
+
+    if not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+        next_url = "/labs/overview/"
 
     return redirect(next_url)
 

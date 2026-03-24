@@ -276,7 +276,12 @@ class TaskDataAccess:
             Updated TaskRecord
         """
         task.add_event(event_type, actor, description, **kwargs)
-        return self.labs_api.update_record(task.id, task.data)
+        return self.labs_api.update_record(
+            record_id=task.id,
+            experiment="tasks",
+            type="Task",
+            data=task.data,
+        )
 
     def add_comment(self, task: TaskRecord, actor: str, content: str) -> TaskRecord:
         """
@@ -291,7 +296,12 @@ class TaskDataAccess:
             Updated TaskRecord
         """
         task.add_comment(actor, content)
-        return self.labs_api.update_record(task.id, task.data)
+        return self.labs_api.update_record(
+            record_id=task.id,
+            experiment="tasks",
+            type="Task",
+            data=task.data,
+        )
 
     def add_ai_session(self, task: TaskRecord, actor: str, session_params: dict, **kwargs) -> TaskRecord:
         """
@@ -307,7 +317,12 @@ class TaskDataAccess:
             Updated TaskRecord
         """
         task.add_ai_session(actor, session_params, **kwargs)
-        return self.labs_api.update_record(task.id, task.data)
+        return self.labs_api.update_record(
+            record_id=task.id,
+            experiment="tasks",
+            type="Task",
+            data=task.data,
+        )
 
     def update_status(self, task: TaskRecord, new_status: str, actor: str) -> TaskRecord:
         """
@@ -331,7 +346,12 @@ class TaskDataAccess:
             description=f"Status changed from {old_status} to {new_status}",
         )
 
-        return self.labs_api.update_record(task.id, task.data)
+        return self.labs_api.update_record(
+            record_id=task.id,
+            experiment="tasks",
+            type="Task",
+            data=task.data,
+        )
 
     def assign_task(self, task: TaskRecord, assigned_to_name: str, assigned_to_type: str, actor: str) -> TaskRecord:
         """
@@ -356,7 +376,12 @@ class TaskDataAccess:
             description=f"Assigned to {assigned_to_name}",
         )
 
-        return self.labs_api.update_record(task.id, task.data)
+        return self.labs_api.update_record(
+            record_id=task.id,
+            experiment="tasks",
+            type="Task",
+            data=task.data,
+        )
 
     # Connect API Integration Methods
 

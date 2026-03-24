@@ -979,7 +979,7 @@ class AuditDataAccess:
                     finally:
                         temp_labs_api.close()
             except Exception:
-                pass
+                logger.debug("Cross-opportunity session search failed for session %s", session_id)
 
         return None
 
@@ -1303,7 +1303,8 @@ class AuditDataAccess:
         try:
             self.labs_api.delete_record(job_id)
             return True
-        except Exception:
+        except Exception as e:
+            logger.warning("Failed to delete audit creation job %s: %s", job_id, e)
             return False
 
     def delete_audit_session(self, session_id: int) -> bool:

@@ -543,10 +543,6 @@ class WorkflowDataAccess(BaseDataAccess):
             records = [r for r in records if r.data.get("definition_id") == definition_id]
         return records
 
-    def list_instances(self, definition_id: int | None = None) -> list[WorkflowRunRecord]:
-        """Alias for list_runs (deprecated)."""
-        return self.list_runs(definition_id)
-
     def get_run(self, run_id: int) -> WorkflowRunRecord | None:
         """Get a workflow run by ID."""
         return self.labs_api.get_record_by_id(
@@ -641,10 +637,6 @@ class WorkflowDataAccess(BaseDataAccess):
 
         return deleted_counts
 
-    def get_instance(self, instance_id: int) -> WorkflowRunRecord | None:
-        """Alias for get_run (deprecated)."""
-        return self.get_run(instance_id)
-
     def get_or_create_run(self, definition_id: int, opportunity_id: int) -> WorkflowRunRecord:
         """Get or create a workflow run for the current week."""
         today = datetime.now(timezone.utc).date()
@@ -680,10 +672,6 @@ class WorkflowDataAccess(BaseDataAccess):
                 "opportunity_id": record.opportunity_id,
             }
         )
-
-    def get_or_create_instance(self, definition_id: int, opportunity_id: int) -> WorkflowRunRecord:
-        """Alias for get_or_create_run (deprecated)."""
-        return self.get_or_create_run(definition_id, opportunity_id)
 
     def update_run_state(
         self, run_id: int, new_state: dict, run: WorkflowRunRecord | None = None
@@ -728,10 +716,6 @@ class WorkflowDataAccess(BaseDataAccess):
                 }
             )
         return None
-
-    def update_instance_state(self, instance_id: int, new_state: dict) -> WorkflowRunRecord | None:
-        """Alias for update_run_state (deprecated)."""
-        return self.update_run_state(instance_id, new_state)
 
     def save_run_snapshot(self, run_id: int, snapshot: dict) -> WorkflowRunRecord | None:
         """Save a data snapshot on the run (writes to run.data['snapshot']).

@@ -866,8 +866,6 @@ def get_run_api(request, run_id):
 
 @login_required
 @require_POST
-@login_required
-@require_POST
 def create_workflow_from_template_view(request):
     """Create a workflow from a template."""
     from django.contrib import messages
