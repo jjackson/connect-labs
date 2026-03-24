@@ -9,6 +9,7 @@ from django.views.generic import TemplateView
 
 from commcare_connect.labs.context import clear_context_from_session
 from commcare_connect.labs.integrations.connect.oauth import fetch_user_organization_data
+from commcare_connect.utils.dimagi_user import is_dimagi_user
 
 
 @login_required
@@ -152,20 +153,7 @@ class LabsOverviewView(LoginRequiredMixin, TemplateView):
         else:
             coverage_url = "/coverage/?config=chc_nutrition"
 
-        # TODO: Re-enable email detection once Connect server PR is merged and deployed.
-        # The email field is currently empty because /o/introspect/ and /o/userinfo/ don't
-        # return it; the fix adds it to /export/opp_org_program_list/ instead.
-        # Original check (restore by replacing the next line and un-commenting the block):
-        #   from django.conf import settings as _settings
-        #   _u_email = getattr(self.request.user, "email", "") or ""
-        #   _u_username = getattr(self.request.user, "username", "") or ""
-        #   _labs_admins = getattr(_settings, "LABS_ADMIN_USERNAMES", [])
-        #   _is_dimagi = (
-        #       _u_email.endswith("@dimagi.com")
-        #       or _u_username.endswith("@dimagi.com")
-        #       or (_u_username and _u_username in _labs_admins)
-        #   )
-        _is_dimagi = True
+        _is_dimagi = is_dimagi_user(self.request.user)
 
         # ── Labs projects ──────────────────────────────────────────────────────
         # Tasks + Workflows: visible to all authenticated users.

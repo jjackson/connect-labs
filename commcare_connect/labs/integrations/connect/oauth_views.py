@@ -183,6 +183,21 @@ def labs_oauth_callback(request: HttpRequest) -> HttpResponse:
     expires_in = token_json.get("expires_in", 1209600)  # Default 2 weeks
     expires_at = timezone.now() + datetime.timedelta(seconds=expires_in)
 
+    # Fetch OIDC userinfo for reliable email
+    try:
+        userinfo_resp = httpx.get(
+            f"{settings.CONNECT_PRODUCTION_URL}/o/userinfo/",
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=10,
+        )
+        if userinfo_resp.status_code == 200:
+            userinfo = userinfo_resp.json()
+            if userinfo.get("email"):
+                profile_data["email"] = userinfo["email"]
+                logger.info(f"Got email from OIDC userinfo for {profile_data.get('username')}")
+    except Exception:
+        logger.warning("Failed to fetch OIDC userinfo", exc_info=True)
+
     # Fetch organization data from production API
     org_data = fetch_user_organization_data(access_token)
 
