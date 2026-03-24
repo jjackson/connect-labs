@@ -664,10 +664,26 @@ function renderPerformanceTable(visits, payments, container) {
     html += '<tr>';
 
     // Opportunity name + llo_name + country
+    var oppNameHtml = row.oppName;
+    if (
+      typeof connectOppBaseUrl !== 'undefined' &&
+      connectOppBaseUrl &&
+      row.id
+    ) {
+      oppNameHtml =
+        '<a href="' +
+        connectOppBaseUrl +
+        '/' +
+        row.id +
+        '/" target="_blank" rel="noopener" ' +
+        'class="text-indigo-600 hover:text-indigo-800 hover:underline">' +
+        row.oppName +
+        ' <i class="fa-solid fa-arrow-up-right-from-square text-[10px] ml-0.5 opacity-60"></i></a>';
+    }
     html +=
       '<td class="px-4 py-3 text-sm">' +
       '<div class="font-medium text-gray-900">' +
-      row.oppName +
+      oppNameHtml +
       '</div>' +
       (row.lloName
         ? '<div class="text-xs text-gray-400">' + row.lloName + '</div>'
@@ -930,12 +946,12 @@ function renderPaymentsChart(payments) {
       label: opp.opp_name,
       data: cumulative,
       borderColor: color,
-      backgroundColor: color + '40', // 25% opacity for stacked visibility
-      fill: 'origin',
+      backgroundColor: color + '99', // 60% opacity for solid stacked areas
+      fill: true,
       tension: 0.3,
-      pointRadius: 2,
-      pointHoverRadius: 5,
-      borderWidth: 1.5,
+      pointRadius: 0,
+      pointHoverRadius: 4,
+      borderWidth: 2,
     });
   }
 
@@ -1883,4 +1899,70 @@ function animateCounters() {
   }
 
   requestAnimationFrame(step);
+}
+
+// ---------------------------------------------------------------------------
+// Module exports (for unit testing — no-op in browser)
+// ---------------------------------------------------------------------------
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    weekStart: weekStart,
+    uniqueWeeks: uniqueWeeks,
+    groupByOpp: groupByOpp,
+    oppColor: oppColor,
+    resetColors: resetColors,
+    fmtNum: fmtNum,
+    fmtUSD: fmtUSD,
+    referenceWeeks: referenceWeeks,
+    countVisitsInWeek: countVisitsInWeek,
+    sumUSDInWeek: sumUSDInWeek,
+    trendInfo: trendInfo,
+    activeFLWs: activeFLWs,
+    maxVisitDate: maxVisitDate,
+    aggregateForReport: aggregateForReport,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Module exports (for unit testing — no-op in browser)
+// ---------------------------------------------------------------------------
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    weekStart: weekStart,
+    uniqueWeeks: uniqueWeeks,
+    groupByOpp: groupByOpp,
+    oppColor: oppColor,
+    resetColors: resetColors,
+    fmtNum: fmtNum,
+    fmtUSD: fmtUSD,
+    referenceWeeks: referenceWeeks,
+    countVisitsInWeek: countVisitsInWeek,
+    sumUSDInWeek: sumUSDInWeek,
+    trendInfo: trendInfo,
+    activeFLWs: activeFLWs,
+    maxVisitDate: maxVisitDate,
+    aggregateForReport: aggregateForReport,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Module exports (for unit testing — no-op in browser)
+// ---------------------------------------------------------------------------
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    weekStart: weekStart,
+    uniqueWeeks: uniqueWeeks,
+    groupByOpp: groupByOpp,
+    oppColor: oppColor,
+    resetColors: resetColors,
+    fmtNum: fmtNum,
+    fmtUSD: fmtUSD,
+    referenceWeeks: referenceWeeks,
+    countVisitsInWeek: countVisitsInWeek,
+    sumUSDInWeek: sumUSDInWeek,
+    trendInfo: trendInfo,
+    activeFLWs: activeFLWs,
+    maxVisitDate: maxVisitDate,
+    aggregateForReport: aggregateForReport,
+  };
 }
